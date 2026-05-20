@@ -1,7 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const SALES_PREFIX = 'sales_';
-const WEEKLY_MENU_KEY = 'weekly_menu';
+import {
+  collection, doc, setDoc, getDoc, getDocs,
+  query, where, orderBy, serverTimestamp,
+} from 'firebase/firestore';
+import { db } from './firebase';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -20,14 +21,17 @@ export function lastNDays(n = 7) {
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────
+// Firestore path: orders/{orderId}
+// Each document is one order with a `dateStr` field for day-based queries.
 
 export async function saveOrder(order) {
   try {
-    const key = `${SALES_PREFIX}${todayDateStr()}`;
-    const existing = await AsyncStorage.getItem(key);
-    const orders = existing ? JSON.parse(existing) : [];
-    orders.unshift({ ...order, savedAt: new Date().toISOString() });
-    await AsyncStorage.setItem(key, JSON.stringify(orders));
+    const ref = doc(collection(db, 'orders'), order.orderId);
+    await setDoc(ref, {
+      ...order,
+      dateStr: todayDateStr(),
+      savedAt: new Date().toISOString(),
+    });
   } catch (e) {
     console.warn('saveOrder failed:', e);
   }
@@ -39,9 +43,15 @@ export async function loadTodayOrders() {
 
 export async function loadOrdersByDate(dateStr) {
   try {
-    const data = await AsyncStorage.getItem(`${SALES_PREFIX}${dateStr}`);
-    return data ? JSON.parse(data) : [];
-  } catch {
+    const q = query(
+      collection(db, 'orders'),
+      where('dateStr', '==', dateStr),
+      orderBy('savedAt', 'desc')
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => d.data());
+  } catch (e) {
+    console.warn('loadOrdersByDate failed:', e);
     return [];
   }
 }
@@ -56,12 +66,12 @@ export async function loadOrdersForDays(n = 7) {
 }
 
 // ── Weekly menu ───────────────────────────────────────────────────────────────
-// Shape: { Breakfast: [{id,name,price,emoji,description,category},...], Lunch: [...], Dinner: [...] }
-// Admin saves this once; vendors read it at order time.
+// Firestore path: config/weekly_menu
+// Single document shared across all devices — admin writes, vendors read.
 
 export async function saveWeeklyMenu(menu) {
   try {
-    await AsyncStorage.setItem(WEEKLY_MENU_KEY, JSON.stringify(menu));
+    await setDoc(doc(db, 'config', 'weekly_menu'), { menu });
   } catch (e) {
     console.warn('saveWeeklyMenu failed:', e);
   }
@@ -69,9 +79,11 @@ export async function saveWeeklyMenu(menu) {
 
 export async function loadWeeklyMenu() {
   try {
-    const data = await AsyncStorage.getItem(WEEKLY_MENU_KEY);
-    return data ? JSON.parse(data) : null;
-  } catch {
+    const snap = await getDoc(doc(db, 'config', 'weekly_menu'));
+    if (!snap.exists()) return null;
+    return snap.data().menu;
+  } catch (e) {
+    console.warn('loadWeeklyMenu failed:', e);
     return null;
   }
 }

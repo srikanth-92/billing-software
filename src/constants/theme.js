@@ -1,0 +1,15 @@
+export const THEME = {
+  navy:        '#0f2340',
+  navyLight:   '#162d50',
+  gold:        '#c9a840',
+  goldLight:   '#e8cc7a',
+  goldPale:    '#fdf6dc',
+  goldBorder:  '#e8d78a',
+  white:       '#ffffff',
+  offWhite:    '#f8fafc',
+  slate:       '#64748b',
+  slateLight:  '#94a3b8',
+  text:        '#1e293b',
+  divider:     '#e2e8f0',
+  rowBorder:   '#f1f5f9',
+};

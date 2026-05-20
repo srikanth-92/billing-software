@@ -6,6 +6,7 @@ import {
 import { MENU_ITEMS, RESTAURANT_NAME } from '../constants';
 import { saveWeeklyMenu, loadWeeklyMenu, loadOrdersForDays, lastNDays } from '../utils/storage';
 import { formatCurrency } from '../utils/razorpay';
+import { THEME } from '../constants/theme';
 
 const MEAL_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
 const TABS = ['Menu Editor', 'Staff Preview', 'Vendor Dashboard'];
@@ -334,7 +335,7 @@ export default function AdminScreen({ navigation, route }) {
                     onPress={() => setPreviewTab(cat)}
                   >
                     <Text style={styles.previewTabEmoji}>{m.emoji}</Text>
-                    <Text style={[styles.previewTabLabel, active && { color: '#fff' }]}>{cat}</Text>
+                    <Text style={[styles.previewTabLabel, active && { color: THEME.white }]}>{cat}</Text>
                     {count > 0 && (
                       <View style={[styles.previewTabBadge, { backgroundColor: active ? '#fff' : m.color }]}>
                         <Text style={[styles.previewTabBadgeText, { color: active ? m.color : '#fff' }]}>{count}</Text>
@@ -494,109 +495,109 @@ function formatDate(dateStr) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: THEME.offWhite },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#1e293b', paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 14,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-  headerSub: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.white },
+  headerSub: { fontSize: 12, color: THEME.slateLight, marginTop: 2 },
   logoutBtn: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
-  logoutText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  logoutText: { color: THEME.white, fontSize: 13, fontWeight: '600' },
 
-  tabBar: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  tabBar: { flexDirection: 'row', backgroundColor: THEME.white, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
   tab: { flex: 1, paddingVertical: 13, alignItems: 'center' },
   tabActive: { borderBottomWidth: 3, borderBottomColor: '#f97316' },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#94a3b8' },
-  tabTextActive: { color: '#f97316' },
+  tabText: { fontSize: 14, fontWeight: '600', color: THEME.slateLight },
+  tabTextActive: { color: THEME.gold },
 
   // ── Menu editor ────────────────────────────────────────────────────────────
   editorContent: { padding: 16, paddingBottom: 60 },
   mealTabs: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   mealTab: {
     flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5,
-    borderColor: '#e2e8f0', backgroundColor: '#fff', alignItems: 'center',
+    borderColor: THEME.goldBorder, backgroundColor: THEME.white, alignItems: 'center',
   },
-  mealTabActive: { backgroundColor: '#f97316', borderColor: '#f97316' },
-  mealTabText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  mealTabTextActive: { color: '#fff' },
+  mealTabActive: { backgroundColor: THEME.navy, borderColor: '#f97316' },
+  mealTabText: { fontSize: 14, fontWeight: '600', color: THEME.slate },
+  mealTabTextActive: { color: THEME.white },
 
   card: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 16,
+    backgroundColor: THEME.white, borderRadius: 14, padding: 16, marginBottom: 16,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  cardTitle: { fontSize: 14, fontWeight: '700', color: THEME.slate, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
 
   editorRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   editorEmoji: { fontSize: 24, width: 34 },
   nameInput: {
-    flex: 1, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: '#1e293b', backgroundColor: '#f8fafc',
+    flex: 1, borderWidth: 1, borderColor: THEME.goldBorder, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: THEME.text, backgroundColor: THEME.offWhite,
   },
   priceInputWrap: {
-    flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0',
-    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: '#f8fafc',
+    flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: THEME.goldBorder,
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: THEME.offWhite,
   },
-  rupee: { fontSize: 14, color: '#64748b', marginRight: 2 },
-  priceInput: { fontSize: 14, color: '#1e293b', minWidth: 50 },
+  rupee: { fontSize: 14, color: THEME.slate, marginRight: 2 },
+  priceInput: { fontSize: 14, color: THEME.text, minWidth: 50 },
   removeBtn: { padding: 6 },
   removeBtnText: { fontSize: 16, color: '#ef4444' },
 
   addRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   newInput: {
-    borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: '#1e293b', backgroundColor: '#f8fafc',
+    borderWidth: 1, borderColor: THEME.goldBorder, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: THEME.text, backgroundColor: THEME.offWhite,
   },
-  addBtn: { marginTop: 12, backgroundColor: '#f97316', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
-  addBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  addBtn: { marginTop: 12, backgroundColor: THEME.navy, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  addBtnText: { color: THEME.white, fontWeight: 'bold', fontSize: 14 },
 
-  saveBtn: { backgroundColor: '#1e293b', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  saveBtn: { backgroundColor: THEME.navy, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
+  saveBtnText: { color: THEME.white, fontWeight: 'bold', fontSize: 15 },
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
   dashContent: { padding: 16, paddingBottom: 60 },
   summaryRow: { gap: 12, paddingBottom: 16 },
   summaryCard: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 18, minWidth: 160,
+    backgroundColor: THEME.white, borderRadius: 14, padding: 18, minWidth: 160,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
     borderTopWidth: 3, borderTopColor: '#f97316',
   },
-  summaryVendor: { fontSize: 13, fontWeight: '700', color: '#64748b', marginBottom: 6, textTransform: 'uppercase' },
-  summaryRevenue: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
-  summaryOrders: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
+  summaryVendor: { fontSize: 13, fontWeight: '700', color: THEME.slate, marginBottom: 6, textTransform: 'uppercase' },
+  summaryRevenue: { fontSize: 24, fontWeight: 'bold', color: THEME.text },
+  summaryOrders: { fontSize: 12, color: THEME.slateLight, marginTop: 4 },
 
   dayCard: {
-    backgroundColor: '#fff', borderRadius: 14, marginBottom: 12, overflow: 'hidden',
+    backgroundColor: THEME.white, borderRadius: 14, marginBottom: 12, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2,
   },
   dayHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#f8fafc', paddingHorizontal: 16, paddingVertical: 12,
+    backgroundColor: THEME.offWhite, paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: '#e2e8f0',
   },
-  dayDate: { fontSize: 15, fontWeight: 'bold', color: '#1e293b' },
+  dayDate: { fontSize: 15, fontWeight: 'bold', color: THEME.text },
   dayMeta: { alignItems: 'flex-end' },
-  dayOrders: { fontSize: 11, color: '#94a3b8' },
-  dayTotal: { fontSize: 16, fontWeight: 'bold', color: '#f97316' },
+  dayOrders: { fontSize: 11, color: THEME.slateLight },
+  dayTotal: { fontSize: 16, fontWeight: 'bold', color: THEME.gold },
   vendorRow: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 11,
-    borderBottomWidth: 1, borderBottomColor: '#f1f5f9',
+    borderBottomWidth: 1, borderBottomColor: THEME.rowBorder,
   },
-  vendorDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316', marginRight: 10 },
+  vendorDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: THEME.navy, marginRight: 10 },
   vendorName: { flex: 1, fontSize: 14, color: '#334155' },
-  vendorRevenue: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
+  vendorRevenue: { fontSize: 14, fontWeight: '600', color: THEME.text },
 
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
   emptyEmoji: { fontSize: 56, marginBottom: 16 },
-  emptyText: { fontSize: 16, color: '#94a3b8' },
+  emptyText: { fontSize: 16, color: THEME.slateLight },
 
   // ── Staff preview ──────────────────────────────────────────────────────────
-  previewContainer: { flex: 1, backgroundColor: '#f8fafc' },
+  previewContainer: { flex: 1, backgroundColor: THEME.offWhite },
   previewBanner: {
-    backgroundColor: '#1e293b', paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center',
   },
-  previewBannerText: { color: '#94a3b8', fontSize: 12, fontWeight: '600' },
+  previewBannerText: { color: THEME.slateLight, fontSize: 12, fontWeight: '600' },
   previewBody: { flex: 1, flexDirection: 'row', minHeight: 0 },
   previewLeft: { flex: 1, minHeight: 0 },
 
@@ -604,15 +605,15 @@ const styles = StyleSheet.create({
   previewTab: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#fff',
+    borderWidth: 1.5, borderColor: THEME.goldBorder, backgroundColor: THEME.white,
   },
   previewTabEmoji: { fontSize: 15 },
-  previewTabLabel: { fontSize: 13, fontWeight: '600', color: '#64748b' },
+  previewTabLabel: { fontSize: 13, fontWeight: '600', color: THEME.slate },
   previewTabBadge: { minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
   previewTabBadgeText: { fontSize: 11, fontWeight: 'bold' },
 
   previewItemsCard: {
-    backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16,
+    backgroundColor: THEME.white, borderRadius: 16, marginHorizontal: 16,
     borderTopWidth: 3, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
   },
@@ -623,33 +624,33 @@ const styles = StyleSheet.create({
   previewItemRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
   previewItemEmoji: { fontSize: 26, marginRight: 12 },
   previewItemInfo: { flex: 1 },
-  previewItemName: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  previewItemDesc: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
-  previewItemPrice: { fontSize: 13, fontWeight: 'bold', color: '#1e293b', marginRight: 10, minWidth: 48, textAlign: 'right' },
+  previewItemName: { fontSize: 14, fontWeight: '600', color: THEME.text },
+  previewItemDesc: { fontSize: 12, color: THEME.slateLight, marginTop: 2 },
+  previewItemPrice: { fontSize: 13, fontWeight: 'bold', color: THEME.text, marginRight: 10, minWidth: 48, textAlign: 'right' },
   previewQtyRow: { flexDirection: 'row', alignItems: 'center' },
-  previewQtyBtn: { backgroundColor: '#f97316', width: 28, height: 28, borderRadius: 7, justifyContent: 'center', alignItems: 'center' },
+  previewQtyBtn: { backgroundColor: THEME.navy, width: 28, height: 28, borderRadius: 7, justifyContent: 'center', alignItems: 'center' },
   previewQtyBtnOff: { backgroundColor: '#e2e8f0' },
-  previewQtyBtnText: { color: '#fff', fontSize: 17, fontWeight: 'bold', lineHeight: 20 },
+  previewQtyBtnText: { color: THEME.white, fontSize: 17, fontWeight: 'bold', lineHeight: 20 },
   previewQtyNum: { fontSize: 14, fontWeight: 'bold', marginHorizontal: 8, minWidth: 16, textAlign: 'center' },
-  previewEmpty: { padding: 20, color: '#94a3b8', textAlign: 'center', fontSize: 13 },
+  previewEmpty: { padding: 20, color: THEME.slateLight, textAlign: 'center', fontSize: 13 },
 
   previewCart: {
-    width: 300, backgroundColor: '#fff', borderLeftWidth: 1, borderLeftColor: '#e2e8f0',
+    width: 300, backgroundColor: THEME.white, borderLeftWidth: 1, borderLeftColor: '#e2e8f0',
     paddingHorizontal: 18, paddingTop: 18, paddingBottom: 20, flexDirection: 'column',
   },
-  previewCartTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', marginBottom: 14 },
+  previewCartTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.text, marginBottom: 14 },
   previewEmptyCart: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   previewEmptyCartEmoji: { fontSize: 40, marginBottom: 10 },
-  previewEmptyCartText: { fontSize: 13, color: '#94a3b8' },
-  previewCartRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  previewEmptyCartText: { fontSize: 13, color: THEME.slateLight },
+  previewCartRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: THEME.rowBorder },
   previewCartEmoji: { fontSize: 22, marginRight: 10 },
-  previewCartName: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
-  previewCartSub: { fontSize: 11, color: '#64748b', marginTop: 1 },
-  previewCartTotal: { fontSize: 13, fontWeight: 'bold', color: '#1e293b' },
+  previewCartName: { fontSize: 13, fontWeight: '600', color: THEME.text },
+  previewCartSub: { fontSize: 11, color: THEME.slate, marginTop: 1 },
+  previewCartTotal: { fontSize: 13, fontWeight: 'bold', color: THEME.text },
   previewCartDivider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 12 },
   previewTotalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
-  previewTotalLabel: { fontSize: 16, fontWeight: 'bold', color: '#1e293b' },
-  previewTotalValue: { fontSize: 16, fontWeight: 'bold', color: '#f97316' },
-  previewCheckoutBtn: { backgroundColor: '#f97316', borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
-  previewCheckoutText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  previewTotalLabel: { fontSize: 16, fontWeight: 'bold', color: THEME.text },
+  previewTotalValue: { fontSize: 16, fontWeight: 'bold', color: THEME.gold },
+  previewCheckoutBtn: { backgroundColor: THEME.navy, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
+  previewCheckoutText: { color: THEME.white, fontWeight: 'bold', fontSize: 14 },
 });

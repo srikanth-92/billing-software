@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { EMPLOYEES, RESTAURANT_NAME } from '../constants';
+import { THEME } from '../constants/theme';
 
 export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
@@ -94,21 +95,23 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f97316',
+    backgroundColor: THEME.navy,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.navyLight,
     borderRadius: 20,
     padding: 32,
     width: '100%',
     maxWidth: 380,
     alignItems: 'center',
-    shadowColor: '#000',
+    borderWidth: 1,
+    borderColor: THEME.goldBorder,
+    shadowColor: THEME.gold,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -116,28 +119,28 @@ const styles = StyleSheet.create({
   restaurantName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: THEME.gold,
     marginBottom: 4,
     textAlign: 'center',
   },
-  subtitle: { fontSize: 14, color: '#64748b', marginBottom: 28 },
+  subtitle: { fontSize: 14, color: THEME.slateLight, marginBottom: 28 },
   inputWrapper: { width: '100%', marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: THEME.goldLight, marginBottom: 6 },
   input: {
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.goldBorder,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#1e293b',
-    backgroundColor: '#f8fafc',
+    color: THEME.white,
+    backgroundColor: THEME.navy,
   },
   passwordRow: { flexDirection: 'row', alignItems: 'center' },
   eyeBtn: { paddingHorizontal: 12, paddingVertical: 12 },
   eyeText: { fontSize: 18 },
   loginBtn: {
-    backgroundColor: '#f97316',
+    backgroundColor: THEME.gold,
     borderRadius: 12,
     paddingVertical: 14,
     width: '100%',
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
   },
-  loginBtnDisabled: { backgroundColor: '#fdba74' },
-  loginBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  hint: { fontSize: 12, color: '#94a3b8', textAlign: 'center' },
+  loginBtnDisabled: { backgroundColor: THEME.goldLight },
+  loginBtnText: { color: THEME.navy, fontSize: 16, fontWeight: 'bold' },
+  hint: { fontSize: 12, color: THEME.slateLight, textAlign: 'center' },
 });

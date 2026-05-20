@@ -10,6 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { loadTodayOrders } from '../utils/storage';
+import { THEME } from '../constants/theme';
 import { formatCurrency, formatDateTime } from '../utils/razorpay';
 import { useLayout } from '../utils/dimensions';
 import { RESTAURANT_NAME, MENU_ITEMS } from '../constants';
@@ -206,31 +207,31 @@ function Header({ navigation, employee }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: THEME.offWhite },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f97316',
+    backgroundColor: THEME.navy,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   backBtn: { paddingVertical: 4, paddingRight: 8 },
-  backText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
-  headerSub: { fontSize: 12, color: '#fed7aa', textAlign: 'center' },
+  backText: { color: THEME.white, fontSize: 15, fontWeight: '600' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.white, textAlign: 'center' },
+  headerSub: { fontSize: 12, color: THEME.slateLight, textAlign: 'center' },
 
   listContent: { paddingBottom: 40 },
   listHeader: { padding: 16 },
-  dateLabel: { fontSize: 14, color: '#64748b', marginBottom: 14 },
+  dateLabel: { fontSize: 14, color: THEME.slate, marginBottom: 14 },
 
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   statsRowTablet: { gap: 16 },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.white,
     borderRadius: 14,
     padding: 16,
     alignItems: 'center',
@@ -242,12 +243,12 @@ const styles = StyleSheet.create({
   },
   statCardTablet: { padding: 20 },
   statEmoji: { fontSize: 26, marginBottom: 6 },
-  statValue: { fontSize: 18, fontWeight: 'bold', color: '#1e293b', textAlign: 'center' },
-  statLabel: { fontSize: 11, color: '#64748b', marginTop: 3, textAlign: 'center' },
-  statSub: { fontSize: 11, color: '#f97316', fontWeight: '600', marginTop: 2 },
+  statValue: { fontSize: 18, fontWeight: 'bold', color: THEME.text, textAlign: 'center' },
+  statLabel: { fontSize: 11, color: THEME.slate, marginTop: 3, textAlign: 'center' },
+  statSub: { fontSize: 11, color: THEME.gold, fontWeight: '600', marginTop: 2 },
 
   breakdownCard: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.white,
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
@@ -257,23 +258,23 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  breakdownTitle: { fontSize: 15, fontWeight: 'bold', color: '#1e293b', marginBottom: 12 },
+  breakdownTitle: { fontSize: 15, fontWeight: 'bold', color: THEME.text, marginBottom: 12 },
   breakdownRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: THEME.rowBorder,
   },
   breakdownEmoji: { fontSize: 22, marginRight: 10 },
   breakdownName: { flex: 1, fontSize: 14, color: '#334155' },
-  breakdownQty: { fontSize: 13, color: '#64748b', marginRight: 16 },
-  breakdownRevenue: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
+  breakdownQty: { fontSize: 13, color: THEME.slate, marginRight: 16 },
+  breakdownRevenue: { fontSize: 14, fontWeight: '600', color: THEME.text },
 
-  ordersTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
+  ordersTitle: { fontSize: 16, fontWeight: 'bold', color: THEME.text, marginBottom: 8 },
 
   orderCard: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.white,
     borderRadius: 14,
     marginHorizontal: 16,
     marginBottom: 10,
@@ -292,8 +293,8 @@ const styles = StyleSheet.create({
   },
   orderHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   orderBadge: {
-    backgroundColor: '#fff7ed',
-    color: '#f97316',
+    backgroundColor: THEME.goldPale,
+    color: THEME.gold,
     fontSize: 11,
     fontWeight: 'bold',
     paddingHorizontal: 8,
@@ -301,11 +302,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
   },
-  orderTime: { fontSize: 13, color: '#1e293b', fontWeight: '600' },
-  orderEmployee: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+  orderTime: { fontSize: 13, color: THEME.text, fontWeight: '600' },
+  orderEmployee: { fontSize: 11, color: THEME.slateLight, marginTop: 2 },
   orderHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  orderTotal: { fontSize: 16, fontWeight: 'bold', color: '#f97316' },
-  orderChevron: { fontSize: 11, color: '#94a3b8' },
+  orderTotal: { fontSize: 16, fontWeight: 'bold', color: THEME.gold },
+  orderChevron: { fontSize: 11, color: THEME.slateLight },
 
   orderBody: {
     paddingHorizontal: 14,
@@ -320,20 +321,20 @@ const styles = StyleSheet.create({
   },
   orderItemEmoji: { fontSize: 18, marginRight: 8 },
   orderItemName: { flex: 1, fontSize: 13, color: '#334155' },
-  orderItemQty: { fontSize: 12, color: '#64748b', marginRight: 12 },
-  orderItemPrice: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
+  orderItemQty: { fontSize: 12, color: THEME.slate, marginRight: 12 },
+  orderItemPrice: { fontSize: 13, fontWeight: '600', color: THEME.text },
   orderFooter: {
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
   },
-  orderFooterText: { fontSize: 12, color: '#64748b', marginBottom: 2 },
-  orderFooterTotal: { fontSize: 14, fontWeight: 'bold', color: '#1e293b', marginTop: 4 },
-  orderPayRef: { fontSize: 11, color: '#94a3b8', marginTop: 4 },
+  orderFooterText: { fontSize: 12, color: THEME.slate, marginBottom: 2 },
+  orderFooterTotal: { fontSize: 14, fontWeight: 'bold', color: THEME.text, marginTop: 4 },
+  orderPayRef: { fontSize: 11, color: THEME.slateLight, marginTop: 4 },
 
   emptyWrap: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
   emptyEmoji: { fontSize: 56, marginBottom: 16 },
-  emptyText: { fontSize: 16, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
-  emptyHint: { fontSize: 13, color: '#94a3b8', textAlign: 'center', lineHeight: 20 },
+  emptyText: { fontSize: 16, fontWeight: 'bold', color: THEME.text, marginBottom: 8 },
+  emptyHint: { fontSize: 13, color: THEME.slateLight, textAlign: 'center', lineHeight: 20 },
 });
