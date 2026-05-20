@@ -1,0 +1,151 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import { EMPLOYEES, RESTAURANT_NAME } from '../constants';
+
+export default function LoginScreen({ navigation }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  function handleLogin() {
+    const trimmedUser = username.trim().toLowerCase();
+    const employee = EMPLOYEES.find(
+      (e) => e.username.toLowerCase() === trimmedUser && e.password === password
+    );
+    if (!employee) {
+      Alert.alert('Login Failed', 'Invalid username or password. Please try again.');
+      return;
+    }
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      if (employee.role === 'admin') {
+        navigation.replace('Admin', { employee });
+      } else {
+        navigation.replace('Menu', { employee });
+      }
+    }, 500);
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.card}>
+        <Text style={styles.emoji}>🍽️</Text>
+        <Text style={styles.restaurantName}>{RESTAURANT_NAME}</Text>
+        <Text style={styles.subtitle}>Staff Login</Text>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.label}>Username</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter username"
+            placeholderTextColor="#aaa"
+            autoCapitalize="none"
+            value={username}
+            onChangeText={setUsername}
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="Enter password"
+              placeholderTextColor="#aaa"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+              <Text style={styles.eyeText}>{showPassword ? '🙈' : '👁️'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          <Text style={styles.loginBtnText}>{loading ? 'Logging in...' : 'Login'}</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.hint}>Contact admin if you forgot your credentials.</Text>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f97316',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 32,
+    width: '100%',
+    maxWidth: 380,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  emoji: { fontSize: 56, marginBottom: 8 },
+  restaurantName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  subtitle: { fontSize: 14, color: '#64748b', marginBottom: 28 },
+  inputWrapper: { width: '100%', marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  input: {
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+  },
+  passwordRow: { flexDirection: 'row', alignItems: 'center' },
+  eyeBtn: { paddingHorizontal: 12, paddingVertical: 12 },
+  eyeText: { fontSize: 18 },
+  loginBtn: {
+    backgroundColor: '#f97316',
+    borderRadius: 12,
+    paddingVertical: 14,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  loginBtnDisabled: { backgroundColor: '#fdba74' },
+  loginBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  hint: { fontSize: 12, color: '#94a3b8', textAlign: 'center' },
+});
