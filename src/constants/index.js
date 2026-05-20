@@ -1,9 +1,11 @@
 // Employee credentials — change these to your actual staff usernames/passwords
 export const EMPLOYEES = [
-  { username: 'admin',   password: 'admin123', name: 'Admin',    role: 'admin'  },
-  { username: 'staff1',  password: 'staff123', name: 'Staff 1',  role: 'vendor' },
-  { username: 'staff2',  password: 'staff456', name: 'Staff 2',  role: 'vendor' },
-  { username: 'cashier', password: 'cash789',  name: 'Cashier',  role: 'vendor' },
+  { username: 'admin',   password: 'BOW@admin1',  name: 'Admin',    role: 'admin'  },
+  { username: 'cart1',   password: 'BOW@cart1',   name: 'Cart 1',   role: 'vendor' },
+  { username: 'cart2',   password: 'BOW@cart2',   name: 'Cart 2',   role: 'vendor' },
+  { username: 'cart3',   password: 'BOW@cart3',   name: 'Cart 3',   role: 'vendor' },
+  { username: 'cart4',   password: 'BOW@cart4',   name: 'Cart 4',   role: 'vendor' },
+  { username: 'cart5',   password: 'BOW@cart5',   name: 'Cart 5',   role: 'vendor' },
 ];
 
 export const MENU_ITEMS = [
