@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "My Restaurant",
+    "name": "Buffet on Wheels",
     "slug": "my-restaurant-pos",
     "version": "1.0.0",
     "orientation": "default",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f97316"
+      "backgroundColor": "#0f2340"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
       "package": "com.myrestaurant.pos",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#f97316"
+        "backgroundColor": "#0f2340"
       },
       "permissions": [
         "INTERNET"
