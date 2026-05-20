@@ -46,24 +46,16 @@ export default function GuestPaymentScreen({ navigation, route }) {
           if (cancelled) return;
           setState(STATE.AWAITING);
 
-          // Open modal — handler fires for card/netbanking/wallet automatically
-          openRazorpayCheckout({ razorpayOrderId: rzpOId, amountRupees: total, orderId })
+          // Use redirect mode — Razorpay redirects to /guest-confirm after payment
+          // This works for ALL payment methods including cross-device UPI QR
+          const callbackUrl = `${window.location.origin}/guest-confirm?orderId=${orderId}&subtotal=${subtotal}&tax=${tax}&total=${total}&items=${encodeURIComponent(JSON.stringify(items))}`;
+
+          openRazorpayCheckout({ razorpayOrderId: rzpOId, amountRupees: total, orderId, callbackUrl })
             .then((payment) => {
+              // handler fires for non-redirect payments (card, wallet, netbanking)
               if (!cancelled) handlePaymentSuccess(payment.razorpay_payment_id || payment.id);
             })
-            .catch(() => {}); // ignore dismiss — polling handles UPI QR case
-
-          // Poll order status every 3s to catch UPI QR payments (handler doesn't fire for cross-device UPI)
-          if (rzpOId) {
-            pollRef.current = setInterval(async () => {
-              const status = await fetchRazorpayOrderStatus(rzpOId);
-              if (status === 'paid' && !cancelled) {
-                clearInterval(pollRef.current);
-                closeRazorpayCheckout();
-                handlePaymentSuccess(rzpOId);
-              }
-            }, 3000);
-          }
+            .catch(() => {});
         } catch (err) {
           if (!cancelled) { setErrorMsg(err.message || 'Payment failed'); setState(STATE.ERROR); }
         }

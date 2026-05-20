@@ -11,6 +11,7 @@ import SalesScreen from './src/screens/SalesScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import GuestMenuScreen from './src/screens/GuestMenuScreen';
 import GuestPaymentScreen from './src/screens/GuestPaymentScreen';
+import GuestConfirmScreen from './src/screens/GuestConfirmScreen';
 import GuestQRScreen from './src/screens/GuestQRScreen';
 
 const Stack = createStackNavigator();
@@ -20,6 +21,7 @@ const linking = {
   config: {
     screens: {
       GuestMenu: 'guest',
+      GuestConfirm: 'guest-confirm',
       Login: '',
     },
   },
@@ -37,6 +39,7 @@ export default function App() {
         <Stack.Screen name="Sales" component={SalesScreen} />
         <Stack.Screen name="GuestMenu" component={GuestMenuScreen} />
         <Stack.Screen name="GuestPayment" component={GuestPaymentScreen} />
+        <Stack.Screen name="GuestConfirm" component={GuestConfirmScreen} />
         <Stack.Screen name="GuestQR" component={GuestQRScreen} />
       </Stack.Navigator>
     </NavigationContainer>

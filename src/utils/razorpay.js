@@ -35,7 +35,7 @@ let _rzpInstance = null;
  * Loads checkout.js (if not already loaded) then opens the Razorpay payment modal.
  * Web-only. Resolves with the payment response on success, rejects on dismiss/error.
  */
-export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, prefill = {} }) {
+export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, prefill = {}, callbackUrl = null }) {
   return new Promise((resolve, reject) => {
     function launch() {
       const options = {
@@ -49,6 +49,9 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
         theme: { color: '#c9a840' },
         handler: resolve,
         modal: { ondismiss: () => reject(new Error('dismissed')) },
+        // redirect: true tells Razorpay to redirect to callback_url after payment
+        // instead of using the handler (which doesn't fire for cross-device UPI QR)
+        ...(callbackUrl ? { callback_url: callbackUrl, redirect: true } : {}),
       };
       _rzpInstance = new window.Razorpay(options);
       _rzpInstance.open();
