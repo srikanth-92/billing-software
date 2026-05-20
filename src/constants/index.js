@@ -46,8 +46,8 @@ export const MENU_ITEMS = [
 
 // Razorpay configuration
 // Get these from https://dashboard.razorpay.com → Settings → API Keys
-export const RAZORPAY_KEY_ID = 'rzp_live_Srjhe7xX8yrgX8';
-export const RAZORPAY_KEY_SECRET = 'GxwI77ZPQpSAx6kPHppfsHF5';
+export const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || '';
+export const RAZORPAY_KEY_SECRET = process.env.EXPO_PUBLIC_RAZORPAY_KEY_SECRET || '';
 export const RESTAURANT_NAME = 'Buffet on Wheels';
 export const RESTAURANT_ADDRESS = '123 Food Street, City - 000000';
 export const RESTAURANT_PHONE = '+91 98765 43210';
