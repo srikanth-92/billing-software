@@ -45,18 +45,29 @@ export default function GuestPaymentScreen({ navigation, route }) {
           setState(STATE.AWAITING);
           const payment = await openRazorpayCheckout({ razorpayOrderId: rzpOrderId, amountRupees: total, orderId });
           if (cancelled) return;
-          const token = await getNextToken();
-          setTokenNumber(token);
+
+          // Show confirmed screen immediately — don't block on Firestore
           setState(STATE.CONFIRMED);
-          await saveOrder({
-            orderId, items, subtotal, tax, total,
-            employeeName: 'Guest (Self-Order)',
-            paymentId: payment.razorpay_payment_id || payment.id,
-            paymentMethod: 'razorpay_checkout',
-            isGuestOrder: true,
-            tokenNumber: token,
-            printPending: true,
-          });
+
+          // Get token + save order in background
+          try {
+            const token = await getNextToken();
+            if (!cancelled) setTokenNumber(token);
+            await saveOrder({
+              orderId, items, subtotal, tax, total,
+              employeeName: 'Guest (Self-Order)',
+              paymentId: payment.razorpay_payment_id || payment.id,
+              paymentMethod: 'razorpay_checkout',
+              isGuestOrder: true,
+              tokenNumber: token,
+              printPending: true,
+            });
+          } catch (tokenErr) {
+            // Token failed — generate a local fallback so customer still sees something
+            const fallback = `T${String(Date.now()).slice(-3)}`;
+            if (!cancelled) setTokenNumber(fallback);
+            console.warn('Token/save error:', tokenErr);
+          }
         } catch (err) {
           if (cancelled) return;
           if (err?.message === 'dismissed') { navigation.goBack(); }
@@ -151,7 +162,10 @@ export default function GuestPaymentScreen({ navigation, route }) {
           <Text style={styles.successTitle}>Payment Confirmed!</Text>
           <View style={styles.tokenBox}>
             <Text style={styles.tokenLabel}>YOUR TOKEN NUMBER</Text>
-            <Text style={styles.tokenNumber}>{tokenNumber}</Text>
+            {tokenNumber
+              ? <Text style={styles.tokenNumber}>{tokenNumber}</Text>
+              : <ActivityIndicator size="large" color={THEME.navy} style={{ marginVertical: 12 }} />
+            }
             <Text style={styles.tokenHint}>Show this at the counter to collect your order</Text>
           </View>
           <Text style={styles.successAmount}>{formatCurrency(total)}</Text>
