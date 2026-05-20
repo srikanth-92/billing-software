@@ -29,6 +29,8 @@ export async function createRazorpayOrder({ amountRupees, orderId }) {
   return res.json();
 }
 
+let _rzpInstance = null;
+
 /**
  * Loads checkout.js (if not already loaded) then opens the Razorpay payment modal.
  * Web-only. Resolves with the payment response on success, rejects on dismiss/error.
@@ -48,8 +50,8 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
         handler: resolve,
         modal: { ondismiss: () => reject(new Error('dismissed')) },
       };
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      _rzpInstance = new window.Razorpay(options);
+      _rzpInstance.open();
     }
 
     if (window.Razorpay) {
@@ -62,6 +64,27 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
       document.head.appendChild(script);
     }
   });
+}
+
+/** Close the Razorpay modal programmatically. */
+export function closeRazorpayCheckout() {
+  try { _rzpInstance?.close(); } catch {}
+  _rzpInstance = null;
+}
+
+/**
+ * Fetch a Razorpay Order by ID and return its status.
+ * Returns 'paid' once payment is captured.
+ */
+export async function fetchRazorpayOrderStatus(razorpayOrderId) {
+  try {
+    const res = await fetch(`${BASE}/orders/${razorpayOrderId}`, { headers: authHeader() });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.status; // 'created' | 'attempted' | 'paid'
+  } catch {
+    return null;
+  }
 }
 
 /**

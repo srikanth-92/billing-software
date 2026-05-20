@@ -4,8 +4,8 @@ import {
   ScrollView, ActivityIndicator, SafeAreaView, Platform,
 } from 'react-native';
 import {
-  createRazorpayOrder, openRazorpayCheckout,
-  createRazorpayQR, fetchQRPayments,
+  createRazorpayOrder, openRazorpayCheckout, closeRazorpayCheckout,
+  fetchRazorpayOrderStatus, createRazorpayQR, fetchQRPayments,
   buildUpiString, formatCurrency,
 } from '../utils/razorpay';
 import { saveOrder, getNextToken } from '../utils/storage';
@@ -30,16 +30,12 @@ export default function GuestPaymentScreen({ navigation, route }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [rzpOrderId, setRzpOrderId] = useState(null);
   const pollRef = useRef(null);
-  const rzpRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
       if (Platform.OS === 'web') {
-        // Create Razorpay order then open modal
-        // We do NOT await handler — UPI QR cross-device doesn't fire handler reliably.
-        // Instead we show "I've Paid" button and let user confirm manually.
         try {
           let rzpOId = null;
           try {
@@ -49,18 +45,25 @@ export default function GuestPaymentScreen({ navigation, route }) {
           } catch {}
           if (cancelled) return;
           setState(STATE.AWAITING);
-          // Open modal but don't block — just close it if handler fires automatically
+
+          // Open modal — handler fires for card/netbanking/wallet automatically
           openRazorpayCheckout({ razorpayOrderId: rzpOId, amountRupees: total, orderId })
             .then((payment) => {
-              if (cancelled) return;
-              handlePaymentSuccess(payment.razorpay_payment_id || payment.id);
+              if (!cancelled) handlePaymentSuccess(payment.razorpay_payment_id || payment.id);
             })
-            .catch((err) => {
-              if (err?.message === 'dismissed' && !cancelled) {
-                // Only go back if user explicitly closed without paying
-                // Don't go back automatically — they may have paid via UPI QR
+            .catch(() => {}); // ignore dismiss — polling handles UPI QR case
+
+          // Poll order status every 3s to catch UPI QR payments (handler doesn't fire for cross-device UPI)
+          if (rzpOId) {
+            pollRef.current = setInterval(async () => {
+              const status = await fetchRazorpayOrderStatus(rzpOId);
+              if (status === 'paid' && !cancelled) {
+                clearInterval(pollRef.current);
+                closeRazorpayCheckout();
+                handlePaymentSuccess(rzpOId);
               }
-            });
+            }, 3000);
+          }
         } catch (err) {
           if (!cancelled) { setErrorMsg(err.message || 'Payment failed'); setState(STATE.ERROR); }
         }
@@ -135,11 +138,6 @@ export default function GuestPaymentScreen({ navigation, route }) {
     }
   }
 
-  function handleIvePaid() {
-    // Close the Razorpay modal if still open then confirm
-    try { document.querySelector('.razorpay-backdrop')?.click(); } catch {}
-    handlePaymentSuccess('manual-confirmed');
-  }
 
   const qrSize = isTablet ? 260 : 220;
 
@@ -157,11 +155,7 @@ export default function GuestPaymentScreen({ navigation, route }) {
           <ActivityIndicator size="large" color={THEME.gold} />
           <Text style={styles.cardTitle}>Complete payment in the popup</Text>
           <Text style={styles.cardHint}>Amount: {formatCurrency(total)}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.paidHint}>Paid via UPI QR on your phone?</Text>
-          <TouchableOpacity style={styles.ivePaidBtn} onPress={handleIvePaid}>
-            <Text style={styles.ivePaidText}>✅  I've Paid — Get My Token</Text>
-          </TouchableOpacity>
+          <Text style={styles.cardHint}>Screen updates automatically once payment is received</Text>
         </View>
       )}
 
@@ -266,13 +260,6 @@ const styles = StyleSheet.create({
   cardHint: { fontSize: 13, color: THEME.slate, marginTop: 8, textAlign: 'center' },
   retryBtn: { marginTop: 20, backgroundColor: THEME.gold, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10 },
   retryText: { color: THEME.navy, fontWeight: 'bold', fontSize: 15 },
-  divider: { height: 1, backgroundColor: THEME.rowBorder, width: '100%', marginVertical: 16 },
-  paidHint: { fontSize: 13, color: THEME.slate, marginBottom: 10 },
-  ivePaidBtn: {
-    backgroundColor: THEME.navy, borderRadius: 10, paddingVertical: 14,
-    paddingHorizontal: 24, alignItems: 'center', width: '100%',
-  },
-  ivePaidText: { color: THEME.white, fontWeight: 'bold', fontSize: 15 },
 
   qrSection: { alignItems: 'center', marginTop: 8 },
   qrTitle: { fontSize: 22, fontWeight: 'bold', color: THEME.navy, marginBottom: 4 },
