@@ -12,7 +12,8 @@ import {
 import { MENU_ITEMS, RESTAURANT_NAME, RESTAURANT_GSTIN } from '../constants';
 import { THEME } from '../constants/theme';
 import { generateOrderId, formatCurrency } from '../utils/razorpay';
-import { loadWeeklyMenu } from '../utils/storage';
+import { loadWeeklyMenu, subscribeGuestOrders, markOrderPrinted } from '../utils/storage';
+import { printBill } from '../utils/bill';
 import { useLayout } from '../utils/dimensions';
 
 const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
@@ -41,6 +42,40 @@ export default function MenuScreen({ navigation, route }) {
   const [cart, setCart] = useState({});
   const [activeTab, setActiveTab] = useState(getMealTabForCurrentTime);
   const [menuData, setMenuData] = useState(null); // loaded from storage
+
+  // Listen for guest orders that need printing
+  useEffect(() => {
+    const unsub = subscribeGuestOrders(async (order) => {
+      Alert.alert(
+        `🎫 Token ${order.tokenNumber} — Guest Order`,
+        `${order.items.map((i) => `${i.name} ×${i.qty}`).join('\n')}\n\nTotal: ₹${order.total.toFixed(2)}`,
+        [
+          {
+            text: 'Print Bill',
+            onPress: async () => {
+              try {
+                await printBill({
+                  orderId: order.orderId,
+                  items: order.items,
+                  subtotal: order.subtotal,
+                  tax: order.tax,
+                  total: order.total,
+                  employeeName: 'Guest (Self-Order)',
+                  paymentMode: 'UPI / Razorpay',
+                  tokenNumber: order.tokenNumber,
+                });
+                await markOrderPrinted(order.orderId);
+              } catch (e) {
+                Alert.alert('Print Error', e.message || 'Could not print.');
+              }
+            },
+          },
+          { text: 'Dismiss', style: 'cancel' },
+        ]
+      );
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     loadWeeklyMenu().then((saved) => {
@@ -259,6 +294,12 @@ export default function MenuScreen({ navigation, route }) {
         <Text style={styles.headerSub}>Logged in as {employee.name}</Text>
       </View>
       <View style={styles.headerRight}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('GuestQR')}
+          style={styles.salesBtn}
+        >
+          <Text style={styles.salesBtnText}>📲</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={() => navigation.navigate('Sales', { employee })}
           style={styles.salesBtn}

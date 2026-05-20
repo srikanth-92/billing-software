@@ -2,7 +2,7 @@ import * as Print from 'expo-print';
 import { RESTAURANT_NAME, RESTAURANT_ADDRESS, RESTAURANT_PHONE, RESTAURANT_GSTIN } from '../constants';
 import { formatDateTime } from './razorpay';
 
-export async function printBill({ orderId, items, subtotal, tax, total, employeeName, paymentMode = 'UPI' }) {
+export async function printBill({ orderId, items, subtotal, tax, total, employeeName, paymentMode = 'UPI', tokenNumber = null }) {
   const itemRows = items
     .map(
       (item) => `
@@ -18,6 +18,12 @@ export async function printBill({ orderId, items, subtotal, tax, total, employee
   const gstRow = RESTAURANT_GSTIN
     ? `<tr><td colspan="3">GST (5%)</td><td style="text-align:right">₹${tax.toFixed(2)}</td></tr>`
     : '';
+
+  const tokenBlock = tokenNumber ? `
+  <div style="text-align:center; border: 3px solid #000; margin: 8px 0; padding: 8px;">
+    <div style="font-size:11px; font-weight:bold; letter-spacing:2px;">TOKEN NUMBER</div>
+    <div style="font-size:48px; font-weight:bold; line-height:1.1;">${tokenNumber}</div>
+  </div>` : '';
 
   const html = `
 <!DOCTYPE html>
@@ -44,6 +50,7 @@ export async function printBill({ orderId, items, subtotal, tax, total, employee
   <div class="center">Tel: ${RESTAURANT_PHONE}</div>
   ${RESTAURANT_GSTIN ? `<div class="center">GSTIN: ${RESTAURANT_GSTIN}</div>` : ''}
   <div class="divider"></div>
+  ${tokenBlock}
   <div>Bill No: ${orderId}</div>
   <div>Date: ${formatDateTime()}</div>
   <div>Served by: ${employeeName}</div>

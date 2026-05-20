@@ -1,0 +1,262 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View, Text, StyleSheet, TouchableOpacity,
+  ScrollView, ActivityIndicator, SafeAreaView, Platform,
+} from 'react-native';
+import {
+  createRazorpayOrder, openRazorpayCheckout,
+  createRazorpayQR, fetchQRPayments,
+  buildUpiString, formatCurrency,
+} from '../utils/razorpay';
+import { saveOrder, getNextToken } from '../utils/storage';
+import { RESTAURANT_NAME, RESTAURANT_GSTIN } from '../constants';
+import { THEME } from '../constants/theme';
+import QRCodeDisplay from '../components/QRCodeDisplay';
+import OrderSummary from '../components/OrderSummary';
+import { useLayout } from '../utils/dimensions';
+
+const POLL_MS = 3000;
+const STATE = { CREATING: 'creating', AWAITING: 'awaiting', CONFIRMED: 'confirmed', ERROR: 'error' };
+
+export default function GuestPaymentScreen({ navigation, route }) {
+  const { orderId, items, subtotal, tax, total } = route.params;
+  const { isTablet } = useLayout();
+
+  const [state, setState] = useState(STATE.CREATING);
+  const [qrImageUrl, setQrImageUrl] = useState(null);
+  const [qrUpiString, setQrUpiString] = useState(null);
+  const [qrId, setQrId] = useState(null);
+  const [tokenNumber, setTokenNumber] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const pollRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      if (Platform.OS === 'web') {
+        try {
+          let rzpOrderId = null;
+          try {
+            const order = await createRazorpayOrder({ amountRupees: total, orderId });
+            rzpOrderId = order.id;
+          } catch {}
+          if (cancelled) return;
+          setState(STATE.AWAITING);
+          const payment = await openRazorpayCheckout({ razorpayOrderId: rzpOrderId, amountRupees: total, orderId });
+          if (cancelled) return;
+          const token = await getNextToken();
+          setTokenNumber(token);
+          setState(STATE.CONFIRMED);
+          await saveOrder({
+            orderId, items, subtotal, tax, total,
+            employeeName: 'Guest (Self-Order)',
+            paymentId: payment.razorpay_payment_id || payment.id,
+            paymentMethod: 'razorpay_checkout',
+            isGuestOrder: true,
+            tokenNumber: token,
+            printPending: true,
+          });
+        } catch (err) {
+          if (cancelled) return;
+          if (err?.message === 'dismissed') { navigation.goBack(); }
+          else { setErrorMsg(err.message || 'Payment failed'); setState(STATE.ERROR); }
+        }
+      } else {
+        try {
+          const { qrId: id, imageUrl } = await createRazorpayQR({
+            amountRupees: total, orderId,
+            description: `${RESTAURANT_NAME} – Order ${orderId}`,
+          });
+          if (cancelled) return;
+          setQrId(id);
+          setQrImageUrl(imageUrl);
+          setState(STATE.AWAITING);
+        } catch {
+          if (cancelled) return;
+          const upi = buildUpiString({ amountRupees: total, orderId, restaurantName: RESTAURANT_NAME });
+          setQrUpiString(upi);
+          setState(STATE.AWAITING);
+        }
+      }
+    }
+
+    init();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Poll for native QR payment
+  useEffect(() => {
+    if (state !== STATE.AWAITING || !qrId) return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const payment = await fetchQRPayments(qrId);
+        if (payment) {
+          clearInterval(pollRef.current);
+          const token = await getNextToken();
+          setTokenNumber(token);
+          setState(STATE.CONFIRMED);
+          await saveOrder({
+            orderId, items, subtotal, tax, total,
+            employeeName: 'Guest (Self-Order)',
+            paymentId: payment.id,
+            paymentMethod: payment.method || 'upi',
+            isGuestOrder: true,
+            tokenNumber: token,
+            printPending: true,
+          });
+        }
+      } catch {}
+    }, POLL_MS);
+    return () => clearInterval(pollRef.current);
+  }, [state, qrId]);
+
+  useEffect(() => { return () => clearInterval(pollRef.current); }, []);
+
+  const qrSize = isTablet ? 260 : 220;
+
+  const Panel = () => (
+    <>
+      {state === STATE.CREATING && (
+        <View style={styles.card}>
+          <ActivityIndicator size="large" color={THEME.gold} />
+          <Text style={styles.cardTitle}>Setting up payment…</Text>
+        </View>
+      )}
+
+      {state === STATE.AWAITING && Platform.OS === 'web' && (
+        <View style={styles.card}>
+          <ActivityIndicator size="large" color={THEME.gold} />
+          <Text style={styles.cardTitle}>Complete payment in the popup</Text>
+          <Text style={styles.cardHint}>Amount: {formatCurrency(total)}</Text>
+        </View>
+      )}
+
+      {state === STATE.AWAITING && Platform.OS !== 'web' && (
+        <View style={styles.qrSection}>
+          <Text style={styles.qrTitle}>Scan & Pay</Text>
+          <Text style={styles.qrAmount}>{formatCurrency(total)}</Text>
+          <Text style={styles.qrHint}>Scan using any UPI app to pay</Text>
+          <QRCodeDisplay imageUrl={qrImageUrl} upiString={qrUpiString} size={qrSize} />
+          <View style={styles.waitingRow}>
+            <ActivityIndicator size="small" color={THEME.gold} />
+            <Text style={styles.waitingText}>Waiting for payment…</Text>
+          </View>
+        </View>
+      )}
+
+      {state === STATE.CONFIRMED && (
+        <View style={styles.successCard}>
+          <Text style={styles.successEmoji}>✅</Text>
+          <Text style={styles.successTitle}>Payment Confirmed!</Text>
+          <View style={styles.tokenBox}>
+            <Text style={styles.tokenLabel}>YOUR TOKEN NUMBER</Text>
+            <Text style={styles.tokenNumber}>{tokenNumber}</Text>
+            <Text style={styles.tokenHint}>Show this at the counter to collect your order</Text>
+          </View>
+          <Text style={styles.successAmount}>{formatCurrency(total)}</Text>
+          <Text style={styles.successSub}>Your bill is being printed at the counter.</Text>
+          <TouchableOpacity style={styles.newOrderBtn} onPress={() => navigation.replace('GuestMenu')}>
+            <Text style={styles.newOrderText}>+ New Order</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {state === STATE.ERROR && (
+        <View style={styles.card}>
+          <Text style={{ fontSize: 40, marginBottom: 12 }}>⚠️</Text>
+          <Text style={styles.cardTitle}>Payment Failed</Text>
+          <Text style={styles.cardHint}>{errorMsg}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        {state === STATE.AWAITING || state === STATE.CREATING ? (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+        ) : <View style={{ width: 60 }} />}
+        <Text style={styles.headerTitle}>Payment</Text>
+        <View style={{ width: 60 }} />
+      </View>
+
+      {isTablet ? (
+        <View style={styles.tabletBody}>
+          <ScrollView style={styles.tabletLeft} contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
+            <OrderSummary items={items} subtotal={subtotal} tax={tax} total={total} orderId={orderId} />
+          </ScrollView>
+          <ScrollView style={styles.tabletRight} contentContainerStyle={{ padding: 24, paddingBottom: 40, alignItems: 'center' }}>
+            <Panel />
+          </ScrollView>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content}>
+          <OrderSummary items={items} subtotal={subtotal} tax={tax} total={total} orderId={orderId} />
+          <Panel />
+        </ScrollView>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: THEME.offWhite },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: THEME.goldBorder,
+  },
+  backBtn: { paddingVertical: 4, paddingRight: 8 },
+  backText: { color: THEME.gold, fontSize: 15, fontWeight: '600' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.gold },
+  content: { padding: 16, paddingBottom: 40 },
+  tabletBody: { flex: 1, flexDirection: 'row' },
+  tabletLeft: { flex: 1, borderRightWidth: 1, borderRightColor: THEME.goldBorder },
+  tabletRight: { flex: 1 },
+
+  card: {
+    backgroundColor: THEME.white, borderRadius: 20, padding: 36, alignItems: 'center', marginTop: 12,
+    shadowColor: THEME.gold, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
+    borderWidth: 1, borderColor: THEME.goldBorder,
+  },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.navy, marginTop: 16 },
+  cardHint: { fontSize: 13, color: THEME.slate, marginTop: 8, textAlign: 'center' },
+  retryBtn: { marginTop: 20, backgroundColor: THEME.gold, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10 },
+  retryText: { color: THEME.navy, fontWeight: 'bold', fontSize: 15 },
+
+  qrSection: { alignItems: 'center', marginTop: 8 },
+  qrTitle: { fontSize: 22, fontWeight: 'bold', color: THEME.navy, marginBottom: 4 },
+  qrAmount: { fontSize: 32, fontWeight: 'bold', color: THEME.gold, marginBottom: 8 },
+  qrHint: { fontSize: 13, color: THEME.slate, textAlign: 'center', marginBottom: 20, paddingHorizontal: 20 },
+  waitingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 },
+  waitingText: { fontSize: 13, color: THEME.gold, fontWeight: '600' },
+
+  successCard: {
+    backgroundColor: THEME.white, borderRadius: 20, padding: 28, alignItems: 'center', marginTop: 12,
+    shadowColor: THEME.gold, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 10, elevation: 4,
+    borderWidth: 1, borderColor: THEME.goldBorder,
+  },
+  successEmoji: { fontSize: 56, marginBottom: 8 },
+  successTitle: { fontSize: 22, fontWeight: 'bold', color: '#22c55e', marginBottom: 16 },
+  tokenBox: {
+    borderWidth: 3, borderColor: THEME.navy, borderRadius: 12, paddingHorizontal: 32, paddingVertical: 16,
+    alignItems: 'center', marginBottom: 16, width: '100%',
+  },
+  tokenLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 2, color: THEME.slate, marginBottom: 4 },
+  tokenNumber: { fontSize: 72, fontWeight: 'bold', color: THEME.navy, lineHeight: 80 },
+  tokenHint: { fontSize: 12, color: THEME.slate, textAlign: 'center', marginTop: 6 },
+  successAmount: { fontSize: 24, fontWeight: 'bold', color: THEME.navy, marginBottom: 6 },
+  successSub: { fontSize: 13, color: THEME.slateLight, textAlign: 'center', marginBottom: 20 },
+  newOrderBtn: {
+    borderWidth: 2, borderColor: THEME.gold, borderRadius: 12,
+    paddingVertical: 14, paddingHorizontal: 32, alignItems: 'center', width: '100%',
+  },
+  newOrderText: { color: THEME.gold, fontWeight: 'bold', fontSize: 15 },
+});

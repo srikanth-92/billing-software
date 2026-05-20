@@ -1,0 +1,258 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet, ScrollView,
+  SafeAreaView, ActivityIndicator, Alert,
+} from 'react-native';
+import { MENU_ITEMS, RESTAURANT_NAME, RESTAURANT_GSTIN } from '../constants';
+import { THEME } from '../constants/theme';
+import { generateOrderId, formatCurrency } from '../utils/razorpay';
+import { loadWeeklyMenu } from '../utils/storage';
+
+const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
+const CATEGORY_META = {
+  Breakfast: { emoji: '🌅', color: '#ea580c', bg: '#fff7ed' },
+  Lunch:     { emoji: '☀️',  color: '#ca8a04', bg: '#fefce8' },
+  Dinner:    { emoji: '🌙', color: '#4f46e5', bg: '#eef2ff' },
+  Beverages: { emoji: '☕', color: '#0891b2', bg: '#ecfeff' },
+};
+
+function getMealTab() {
+  const mins = new Date().getHours() * 60 + new Date().getMinutes();
+  if (mins >= 7 * 60 && mins < 10 * 60) return 'Breakfast';
+  if (mins >= 12 * 60 + 30 && mins < 14 * 60) return 'Lunch';
+  if (mins >= 19 * 60 && mins < 22 * 60) return 'Dinner';
+  return 'Breakfast';
+}
+
+export default function GuestMenuScreen({ navigation }) {
+  const [menuData, setMenuData] = useState(null);
+  const [cart, setCart] = useState({});
+  const [activeTab, setActiveTab] = useState(getMealTab);
+
+  useEffect(() => {
+    loadWeeklyMenu().then((saved) => {
+      const defaults = {};
+      CATEGORIES.forEach((cat) => { defaults[cat] = MENU_ITEMS.filter((i) => i.category === cat); });
+      if (!saved) { setMenuData(defaults); return; }
+      const merged = { ...saved };
+      CATEGORIES.forEach((cat) => { if (!merged[cat] || !merged[cat].length) merged[cat] = defaults[cat]; });
+      setMenuData(merged);
+    });
+  }, []);
+
+  const allItems = menuData ? Object.values(menuData).flat() : MENU_ITEMS;
+  const cartItems = allItems.filter((i) => cart[i.id] > 0).map((i) => ({ ...i, qty: cart[i.id] }));
+  const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+  const tax = RESTAURANT_GSTIN ? Math.round(subtotal * 0.05 * 100) / 100 : 0;
+  const total = subtotal + tax;
+  const totalItems = Object.values(cart).reduce((s, q) => s + q, 0);
+
+  function increment(id) { setCart((p) => ({ ...p, [id]: (p[id] || 0) + 1 })); }
+  function decrement(id) {
+    setCart((p) => { const n = { ...p, [id]: (p[id] || 1) - 1 }; if (n[id] <= 0) delete n[id]; return n; });
+  }
+
+  function handleCheckout() {
+    if (!cartItems.length) { Alert.alert('Empty Cart', 'Please add at least one item.'); return; }
+    navigation.navigate('GuestPayment', {
+      orderId: generateOrderId(),
+      items: cartItems,
+      subtotal,
+      tax,
+      total,
+    });
+  }
+
+  if (!menuData) return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{RESTAURANT_NAME}</Text>
+        <Text style={styles.headerSub}>Self-Order Menu</Text>
+      </View>
+      <ActivityIndicator style={{ marginTop: 60 }} size="large" color={THEME.gold} />
+    </SafeAreaView>
+  );
+
+  const meta = CATEGORY_META[activeTab];
+  const visibleItems = menuData[activeTab] || [];
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{RESTAURANT_NAME}</Text>
+        <Text style={styles.headerSub}>Self-Order Menu</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Category tabs */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
+          {CATEGORIES.map((cat) => {
+            const m = CATEGORY_META[cat];
+            const active = cat === activeTab;
+            const count = (menuData[cat] || []).filter((i) => cart[i.id] > 0).length;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.tab, active && { backgroundColor: m.color, borderColor: m.color }]}
+                onPress={() => setActiveTab(cat)}
+              >
+                <Text style={styles.tabEmoji}>{m.emoji}</Text>
+                <Text style={[styles.tabLabel, active && { color: '#fff' }]}>{cat}</Text>
+                {count > 0 && (
+                  <View style={[styles.tabBadge, { backgroundColor: active ? '#fff' : m.color }]}>
+                    <Text style={[styles.tabBadgeText, { color: active ? m.color : '#fff' }]}>{count}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Items */}
+        <View style={[styles.itemsCard, { borderTopColor: meta.color }]}>
+          <View style={[styles.catHeader, { backgroundColor: meta.bg }]}>
+            <Text style={styles.catEmoji}>{meta.emoji}</Text>
+            <Text style={[styles.catTitle, { color: meta.color }]}>{activeTab}</Text>
+          </View>
+          {visibleItems.length === 0 && <Text style={styles.empty}>No items available.</Text>}
+          {visibleItems.map((item, idx) => (
+            <View key={item.id}>
+              <View style={styles.itemRow}>
+                <Text style={styles.itemEmoji}>{item.emoji}</Text>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemDesc} numberOfLines={1}>{item.description}</Text>
+                </View>
+                <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
+                <View style={styles.qtyRow}>
+                  <TouchableOpacity
+                    style={[styles.qtyBtn, !cart[item.id] && styles.qtyBtnOff]}
+                    onPress={() => decrement(item.id)} disabled={!cart[item.id]}
+                  >
+                    <Text style={styles.qtyBtnText}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.qtyNum}>{cart[item.id] || 0}</Text>
+                  <TouchableOpacity style={styles.qtyBtn} onPress={() => increment(item.id)}>
+                    <Text style={styles.qtyBtnText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {idx < visibleItems.length - 1 && <View style={styles.divider} />}
+            </View>
+          ))}
+        </View>
+
+        {/* Cart summary */}
+        {cartItems.length > 0 && (
+          <View style={styles.cartSummary}>
+            <Text style={styles.cartTitle}>Your Order</Text>
+            {cartItems.map((item) => (
+              <View key={item.id} style={styles.cartRow}>
+                <Text style={styles.cartEmoji}>{item.emoji}</Text>
+                <Text style={styles.cartName}>{item.name} ×{item.qty}</Text>
+                <Text style={styles.cartAmt}>{formatCurrency(item.price * item.qty)}</Text>
+              </View>
+            ))}
+            <View style={styles.cartDivider} />
+            {RESTAURANT_GSTIN && (
+              <View style={styles.totalLine}>
+                <Text style={styles.totalLineLabel}>GST (5%)</Text>
+                <Text style={styles.totalLineVal}>{formatCurrency(tax)}</Text>
+              </View>
+            )}
+            <View style={[styles.totalLine, styles.grandLine]}>
+              <Text style={styles.grandLabel}>Total</Text>
+              <Text style={styles.grandVal}>{formatCurrency(total)}</Text>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Checkout bar */}
+      {totalItems > 0 && (
+        <View style={styles.cartBar}>
+          <View>
+            <Text style={styles.cartBarItems}>{totalItems} item{totalItems > 1 ? 's' : ''}</Text>
+            <Text style={styles.cartBarTotal}>{formatCurrency(total)}</Text>
+          </View>
+          <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
+            <Text style={styles.checkoutText}>Pay Now →</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: THEME.offWhite },
+  header: {
+    backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 16,
+    alignItems: 'center', borderBottomWidth: 1, borderBottomColor: THEME.goldBorder,
+  },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: THEME.gold },
+  headerSub: { fontSize: 13, color: THEME.slateLight, marginTop: 2 },
+
+  content: { paddingBottom: 110 },
+  tabBar: { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
+  tab: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+    borderWidth: 1.5, borderColor: THEME.goldBorder, backgroundColor: THEME.white,
+  },
+  tabEmoji: { fontSize: 16 },
+  tabLabel: { fontSize: 14, fontWeight: '600', color: THEME.slate },
+  tabBadge: { minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
+  tabBadgeText: { fontSize: 11, fontWeight: 'bold' },
+
+  itemsCard: {
+    backgroundColor: THEME.white, borderRadius: 16, marginHorizontal: 16,
+    borderTopWidth: 3, overflow: 'hidden',
+    shadowColor: THEME.gold, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
+  },
+  catHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
+  catEmoji: { fontSize: 20 },
+  catTitle: { fontSize: 16, fontWeight: 'bold' },
+  divider: { height: 1, backgroundColor: THEME.rowBorder, marginLeft: 60 },
+  itemRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+  itemEmoji: { fontSize: 28, marginRight: 12 },
+  itemInfo: { flex: 1 },
+  itemName: { fontSize: 15, fontWeight: '600', color: THEME.text },
+  itemDesc: { fontSize: 12, color: THEME.slateLight, marginTop: 2 },
+  itemPrice: { fontSize: 14, fontWeight: 'bold', color: THEME.navy, marginRight: 12, minWidth: 52, textAlign: 'right' },
+  qtyRow: { flexDirection: 'row', alignItems: 'center' },
+  qtyBtn: { backgroundColor: THEME.gold, width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  qtyBtnOff: { backgroundColor: THEME.divider },
+  qtyBtnText: { color: THEME.navy, fontSize: 20, fontWeight: 'bold', lineHeight: 24 },
+  qtyNum: { fontSize: 15, fontWeight: 'bold', marginHorizontal: 10, minWidth: 20, textAlign: 'center', color: THEME.text },
+  empty: { padding: 20, color: THEME.slateLight, textAlign: 'center' },
+
+  cartSummary: {
+    backgroundColor: THEME.white, borderRadius: 16, marginHorizontal: 16, marginTop: 16,
+    padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  },
+  cartTitle: { fontSize: 15, fontWeight: 'bold', color: THEME.text, marginBottom: 12 },
+  cartRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
+  cartEmoji: { fontSize: 18, marginRight: 8 },
+  cartName: { flex: 1, fontSize: 13, color: THEME.text },
+  cartAmt: { fontSize: 13, fontWeight: '600', color: THEME.text },
+  cartDivider: { height: 1, backgroundColor: THEME.rowBorder, marginVertical: 10 },
+  totalLine: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  totalLineLabel: { fontSize: 13, color: THEME.slate },
+  totalLineVal: { fontSize: 13, color: THEME.slate },
+  grandLine: { marginTop: 4, paddingTop: 8, borderTopWidth: 1, borderTopColor: THEME.goldBorder },
+  grandLabel: { fontSize: 16, fontWeight: 'bold', color: THEME.navy },
+  grandVal: { fontSize: 16, fontWeight: 'bold', color: THEME.gold },
+
+  cartBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: THEME.navy, flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, paddingBottom: 24,
+    borderTopWidth: 1, borderTopColor: THEME.goldBorder,
+  },
+  cartBarItems: { color: THEME.slateLight, fontSize: 12 },
+  cartBarTotal: { color: THEME.gold, fontSize: 18, fontWeight: 'bold' },
+  checkoutBtn: { backgroundColor: THEME.gold, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 10 },
+  checkoutText: { color: THEME.navy, fontWeight: 'bold', fontSize: 15 },
+});

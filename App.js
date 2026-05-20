@@ -9,12 +9,25 @@ import MenuScreen from './src/screens/MenuScreen';
 import PaymentScreen from './src/screens/PaymentScreen';
 import SalesScreen from './src/screens/SalesScreen';
 import AdminScreen from './src/screens/AdminScreen';
+import GuestMenuScreen from './src/screens/GuestMenuScreen';
+import GuestPaymentScreen from './src/screens/GuestPaymentScreen';
+import GuestQRScreen from './src/screens/GuestQRScreen';
 
 const Stack = createStackNavigator();
 
+const linking = {
+  prefixes: ['https://buffet-on-wheels-ba58b.web.app', 'buffetonwheels://'],
+  config: {
+    screens: {
+      GuestMenu: 'guest',
+      Login: '',
+    },
+  },
+};
+
 export default function App() {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <StatusBar style="light" />
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
         <Stack.Screen name="Login" component={LoginScreen} />
@@ -22,6 +35,9 @@ export default function App() {
         <Stack.Screen name="Menu" component={MenuScreen} />
         <Stack.Screen name="Payment" component={PaymentScreen} />
         <Stack.Screen name="Sales" component={SalesScreen} />
+        <Stack.Screen name="GuestMenu" component={GuestMenuScreen} />
+        <Stack.Screen name="GuestPayment" component={GuestPaymentScreen} />
+        <Stack.Screen name="GuestQR" component={GuestQRScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,6 +1,6 @@
 import {
-  collection, doc, setDoc, getDoc, getDocs,
-  query, where, orderBy, serverTimestamp,
+  collection, doc, setDoc, getDoc, getDocs, updateDoc,
+  query, where, orderBy, runTransaction, onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -63,6 +63,46 @@ export async function loadOrdersForDays(n = 7) {
     days.map(async (d) => [d, await loadOrdersByDate(d)])
   );
   return Object.fromEntries(entries);
+}
+
+// ── Token counter ─────────────────────────────────────────────────────────────
+// Firestore path: tokens/{dateStr} → { counter: N }
+// Atomically increments and returns the next token number for today.
+
+export async function getNextToken() {
+  const dateStr = todayDateStr();
+  const ref = doc(db, 'tokens', dateStr);
+  const token = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const next = snap.exists() ? snap.data().counter + 1 : 1;
+    tx.set(ref, { counter: next });
+    return next;
+  });
+  return `T${String(token).padStart(3, '0')}`; // T001, T002 …
+}
+
+// Mark a guest order's print job as done
+export async function markOrderPrinted(orderId) {
+  try {
+    await updateDoc(doc(db, 'orders', orderId), { printPending: false });
+  } catch (e) {
+    console.warn('markOrderPrinted failed:', e);
+  }
+}
+
+// Subscribe to unprinted guest orders for today — calls cb(order) for each new one
+export function subscribeGuestOrders(cb) {
+  const q = query(
+    collection(db, 'orders'),
+    where('dateStr', '==', todayDateStr()),
+    where('isGuestOrder', '==', true),
+    where('printPending', '==', true)
+  );
+  return onSnapshot(q, (snap) => {
+    snap.docChanges().forEach((change) => {
+      if (change.type === 'added') cb(change.doc.data());
+    });
+  });
 }
 
 // ── Weekly menu ───────────────────────────────────────────────────────────────

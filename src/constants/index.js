@@ -48,6 +48,10 @@ export const MENU_ITEMS = [
 // Get these from https://dashboard.razorpay.com → Settings → API Keys
 export const RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || '';
 export const RAZORPAY_KEY_SECRET = process.env.EXPO_PUBLIC_RAZORPAY_KEY_SECRET || '';
+
+// Web URL where customers scan QR to self-order
+// Update this after running: npx expo export --platform web && firebase deploy --only hosting
+export const GUEST_ORDER_URL = 'https://buffet-on-wheels-ba58b.web.app/guest';
 export const RESTAURANT_NAME = 'Buffet on Wheels';
 export const RESTAURANT_ADDRESS = '123 Food Street, City - 000000';
 export const RESTAURANT_PHONE = '+91 98765 43210';
