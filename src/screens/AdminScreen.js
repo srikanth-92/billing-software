@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, Alert, ActivityIndicator,
+  StyleSheet, SafeAreaView, Alert, ActivityIndicator, Platform,
 } from 'react-native';
+import { useLayout } from '../utils/dimensions';
 import { MENU_ITEMS, RESTAURANT_NAME } from '../constants';
 import { saveWeeklyMenu, loadWeeklyMenu, loadOrdersForDays, lastNDays } from '../utils/storage';
 import { formatCurrency } from '../utils/razorpay';
@@ -289,133 +290,147 @@ export default function AdminScreen({ navigation, route }) {
   // ── Staff preview ─────────────────────────────────────────────────────────
 
   const StaffPreview = () => {
+    const { isTablet } = useLayout();
     const [previewTab, setPreviewTab] = useState(getMealTabForTime);
     const [cart, setCart] = useState({});
 
     if (!menu) return <ActivityIndicator style={{ marginTop: 60 }} color="#f97316" size="large" />;
 
     const allItems = Object.values(menu).flat();
-    const visibleItems = [...(menu[previewTab] || []), ...(previewTab !== 'Beverages' ? (menu['Beverages'] || []) : [])];
-    const mealItems = menu[previewTab] || [];
-    const bevItems = menu['Beverages'] || [];
-
     function increment(id) { setCart((p) => ({ ...p, [id]: (p[id] || 0) + 1 })); }
     function decrement(id) {
       setCart((p) => { const n = { ...p, [id]: (p[id] || 1) - 1 }; if (n[id] <= 0) delete n[id]; return n; });
     }
 
     const cartItems = allItems.filter((i) => cart[i.id] > 0).map((i) => ({ ...i, qty: cart[i.id] }));
-    const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
-    const total = subtotal;
+    const total = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+    const totalItems = Object.values(cart).reduce((s, q) => s + q, 0);
 
     const meta = CATEGORY_META[previewTab] || CATEGORY_META['Breakfast'];
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
+    const MenuPanel = () => (
+      <ScrollView style={styles.previewLeft} contentContainerStyle={{ paddingBottom: isTablet ? 40 : 110 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.previewTabBar}>
+          {ALL_CATEGORIES.map((cat) => {
+            const m = CATEGORY_META[cat];
+            const active = cat === previewTab;
+            const count = (menu[cat] || []).filter((i) => cart[i.id] > 0).length;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.previewTab, active && { backgroundColor: m.color, borderColor: m.color }]}
+                onPress={() => setPreviewTab(cat)}
+              >
+                <Text style={styles.previewTabEmoji}>{m.emoji}</Text>
+                <Text style={[styles.previewTabLabel, active && { color: THEME.white }]}>{cat}</Text>
+                {count > 0 && (
+                  <View style={[styles.previewTabBadge, { backgroundColor: active ? '#fff' : m.color }]}>
+                    <Text style={[styles.previewTabBadgeText, { color: active ? m.color : '#fff' }]}>{count}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+        <View style={[styles.previewItemsCard, { borderTopColor: meta.color }]}>
+          <View style={[styles.previewCategoryHeader, { backgroundColor: meta.bg }]}>
+            <Text style={styles.previewCatEmoji}>{meta.emoji}</Text>
+            <Text style={[styles.previewCatTitle, { color: meta.color }]}>{previewTab}</Text>
+          </View>
+          {(menu[previewTab] || []).map((item, idx, arr) => (
+            <View key={item.id}>
+              <View style={styles.previewItemRow}>
+                <Text style={styles.previewItemEmoji}>{item.emoji}</Text>
+                <View style={styles.previewItemInfo}>
+                  <Text style={styles.previewItemName}>{item.name}</Text>
+                  <Text style={styles.previewItemDesc} numberOfLines={1}>{item.description}</Text>
+                </View>
+                <Text style={styles.previewItemPrice}>{formatCurrency(item.price)}</Text>
+                <View style={styles.previewQtyRow}>
+                  <TouchableOpacity
+                    style={[styles.previewQtyBtn, !cart[item.id] && styles.previewQtyBtnOff]}
+                    onPress={() => decrement(item.id)} disabled={!cart[item.id]}
+                  >
+                    <Text style={styles.previewQtyBtnText}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.previewQtyNum}>{cart[item.id] || 0}</Text>
+                  <TouchableOpacity style={styles.previewQtyBtn} onPress={() => increment(item.id)}>
+                    <Text style={styles.previewQtyBtnText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {idx < arr.length - 1 && <View style={styles.previewDivider} />}
+            </View>
+          ))}
+          {(menu[previewTab] || []).length === 0 && (
+            <Text style={styles.previewEmpty}>No items configured for this meal.</Text>
+          )}
+        </View>
+      </ScrollView>
+    );
+
+    const TabletCartPanel = () => (
+      <View style={styles.previewCart}>
+        <Text style={styles.previewCartTitle}>Current Order</Text>
+        {cartItems.length === 0 ? (
+          <View style={styles.previewEmptyCart}>
+            <Text style={styles.previewEmptyCartEmoji}>🛒</Text>
+            <Text style={styles.previewEmptyCartText}>No items added yet</Text>
+          </View>
+        ) : (
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+            {cartItems.map((item) => (
+              <View key={item.id} style={styles.previewCartRow}>
+                <Text style={styles.previewCartEmoji}>{item.emoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.previewCartName}>{item.name}</Text>
+                  <Text style={styles.previewCartSub}>{formatCurrency(item.price)} × {item.qty}</Text>
+                </View>
+                <Text style={styles.previewCartTotal}>{formatCurrency(item.price * item.qty)}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+        <View style={styles.previewCartDivider} />
+        <View style={styles.previewTotalRow}>
+          <Text style={styles.previewTotalLabel}>Total</Text>
+          <Text style={styles.previewTotalValue}>{formatCurrency(total)}</Text>
+        </View>
+        <View style={[styles.previewCheckoutBtn, cartItems.length === 0 && { backgroundColor: THEME.goldLight }]}>
+          <Text style={styles.previewCheckoutText}>Proceed to Pay →</Text>
+        </View>
+      </View>
+    );
+
     return (
       <View style={styles.previewContainer}>
-        {/* Banner */}
         <View style={styles.previewBanner}>
           <Text style={styles.previewBannerText}>👁  Staff view · {timeStr}</Text>
         </View>
 
-        <View style={styles.previewBody}>
-          {/* Left: menu */}
-          <ScrollView style={styles.previewLeft} contentContainerStyle={{ paddingBottom: 40 }}>
-            {/* Tabs */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.previewTabBar}>
-              {ALL_CATEGORIES.map((cat) => {
-                const m = CATEGORY_META[cat];
-                const active = cat === previewTab;
-                const count = (menu[cat] || []).filter((i) => cart[i.id] > 0).length;
-                return (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[styles.previewTab, active && { backgroundColor: m.color, borderColor: m.color }]}
-                    onPress={() => setPreviewTab(cat)}
-                  >
-                    <Text style={styles.previewTabEmoji}>{m.emoji}</Text>
-                    <Text style={[styles.previewTabLabel, active && { color: THEME.white }]}>{cat}</Text>
-                    {count > 0 && (
-                      <View style={[styles.previewTabBadge, { backgroundColor: active ? '#fff' : m.color }]}>
-                        <Text style={[styles.previewTabBadgeText, { color: active ? m.color : '#fff' }]}>{count}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* Items */}
-            <View style={[styles.previewItemsCard, { borderTopColor: meta.color }]}>
-              <View style={[styles.previewCategoryHeader, { backgroundColor: meta.bg }]}>
-                <Text style={styles.previewCatEmoji}>{meta.emoji}</Text>
-                <Text style={[styles.previewCatTitle, { color: meta.color }]}>{previewTab}</Text>
-              </View>
-              {(menu[previewTab] || []).map((item, idx, arr) => (
-                <View key={item.id}>
-                  <View style={styles.previewItemRow}>
-                    <Text style={styles.previewItemEmoji}>{item.emoji}</Text>
-                    <View style={styles.previewItemInfo}>
-                      <Text style={styles.previewItemName}>{item.name}</Text>
-                      <Text style={styles.previewItemDesc} numberOfLines={1}>{item.description}</Text>
-                    </View>
-                    <Text style={styles.previewItemPrice}>{formatCurrency(item.price)}</Text>
-                    <View style={styles.previewQtyRow}>
-                      <TouchableOpacity
-                        style={[styles.previewQtyBtn, !cart[item.id] && styles.previewQtyBtnOff]}
-                        onPress={() => decrement(item.id)} disabled={!cart[item.id]}
-                      >
-                        <Text style={styles.previewQtyBtnText}>−</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.previewQtyNum}>{cart[item.id] || 0}</Text>
-                      <TouchableOpacity style={styles.previewQtyBtn} onPress={() => increment(item.id)}>
-                        <Text style={styles.previewQtyBtnText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  {idx < arr.length - 1 && <View style={styles.previewDivider} />}
-                </View>
-              ))}
-              {(menu[previewTab] || []).length === 0 && (
-                <Text style={styles.previewEmpty}>No items configured for this meal.</Text>
-              )}
-            </View>
-
-          </ScrollView>
-
-          {/* Right: cart */}
-          <View style={styles.previewCart}>
-            <Text style={styles.previewCartTitle}>Current Order</Text>
-            {cartItems.length === 0 ? (
-              <View style={styles.previewEmptyCart}>
-                <Text style={styles.previewEmptyCartEmoji}>🛒</Text>
-                <Text style={styles.previewEmptyCartText}>No items added yet</Text>
-              </View>
-            ) : (
-              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-                {cartItems.map((item) => (
-                  <View key={item.id} style={styles.previewCartRow}>
-                    <Text style={styles.previewCartEmoji}>{item.emoji}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.previewCartName}>{item.name}</Text>
-                      <Text style={styles.previewCartSub}>{formatCurrency(item.price)} × {item.qty}</Text>
-                    </View>
-                    <Text style={styles.previewCartTotal}>{formatCurrency(item.price * item.qty)}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-            <View style={styles.previewCartDivider} />
-            <View style={styles.previewTotalRow}>
-              <Text style={styles.previewTotalLabel}>Total</Text>
-              <Text style={styles.previewTotalValue}>{formatCurrency(total)}</Text>
-            </View>
-            <View style={[styles.previewCheckoutBtn, cartItems.length === 0 && { backgroundColor: '#fdba74' }]}>
-              <Text style={styles.previewCheckoutText}>Proceed to Pay →</Text>
-            </View>
+        {isTablet ? (
+          <View style={styles.previewBody}>
+            <MenuPanel />
+            <TabletCartPanel />
           </View>
-        </View>
+        ) : (
+          <>
+            <MenuPanel />
+            {totalItems > 0 && (
+              <View style={styles.previewPhoneBar}>
+                <View>
+                  <Text style={styles.previewPhoneBarItems}>{totalItems} item{totalItems > 1 ? 's' : ''}</Text>
+                  <Text style={styles.previewPhoneBarTotal}>{formatCurrency(total)}</Text>
+                </View>
+                <View style={styles.previewPhoneBarBtn}>
+                  <Text style={styles.previewCheckoutText}>Proceed to Pay →</Text>
+                </View>
+              </View>
+            )}
+          </>
+        )}
       </View>
     );
   };
@@ -653,4 +668,14 @@ const styles = StyleSheet.create({
   previewTotalValue: { fontSize: 16, fontWeight: 'bold', color: THEME.gold },
   previewCheckoutBtn: { backgroundColor: THEME.navy, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
   previewCheckoutText: { color: THEME.white, fontWeight: 'bold', fontSize: 14 },
+
+  previewPhoneBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: THEME.navy, flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, paddingBottom: 24,
+    borderTopWidth: 1, borderTopColor: THEME.goldBorder,
+  },
+  previewPhoneBarItems: { color: THEME.slateLight, fontSize: 12 },
+  previewPhoneBarTotal: { color: THEME.gold, fontSize: 18, fontWeight: 'bold' },
+  previewPhoneBarBtn: { backgroundColor: THEME.gold, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
 });
