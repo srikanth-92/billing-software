@@ -44,7 +44,7 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
         description: `Order ${orderId}`,
         ...(razorpayOrderId ? { order_id: razorpayOrderId } : {}),
         prefill,
-        theme: { color: '#f97316' },
+        theme: { color: '#c9a840' },
         handler: resolve,
         modal: { ondismiss: () => reject(new Error('dismissed')) },
       };
