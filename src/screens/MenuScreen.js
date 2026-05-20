@@ -298,13 +298,13 @@ export default function MenuScreen({ navigation, route }) {
           onPress={() => navigation.navigate('GuestQR')}
           style={styles.salesBtn}
         >
-          <Text style={styles.salesBtnText}>📲</Text>
+          <Text style={styles.salesBtnText}>Guest QR</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => navigation.navigate('Sales', { employee })}
           style={styles.salesBtn}
         >
-          <Text style={styles.salesBtnText}>{isTablet ? "📊  Today's Sales" : '📊'}</Text>
+          <Text style={styles.salesBtnText}>{isTablet ? "Today's Sales" : 'Sales'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Logout</Text>
