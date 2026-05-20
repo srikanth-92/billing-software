@@ -28,50 +28,41 @@ export default function GuestPaymentScreen({ navigation, route }) {
   const [qrId, setQrId] = useState(null);
   const [tokenNumber, setTokenNumber] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [rzpOrderId, setRzpOrderId] = useState(null);
   const pollRef = useRef(null);
+  const rzpRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
       if (Platform.OS === 'web') {
+        // Create Razorpay order then open modal
+        // We do NOT await handler — UPI QR cross-device doesn't fire handler reliably.
+        // Instead we show "I've Paid" button and let user confirm manually.
         try {
-          let rzpOrderId = null;
+          let rzpOId = null;
           try {
             const order = await createRazorpayOrder({ amountRupees: total, orderId });
-            rzpOrderId = order.id;
+            rzpOId = order.id;
+            if (!cancelled) setRzpOrderId(rzpOId);
           } catch {}
           if (cancelled) return;
           setState(STATE.AWAITING);
-          const payment = await openRazorpayCheckout({ razorpayOrderId: rzpOrderId, amountRupees: total, orderId });
-          if (cancelled) return;
-
-          // Show confirmed screen immediately — don't block on Firestore
-          setState(STATE.CONFIRMED);
-
-          // Get token + save order in background
-          try {
-            const token = await getNextToken();
-            if (!cancelled) setTokenNumber(token);
-            await saveOrder({
-              orderId, items, subtotal, tax, total,
-              employeeName: 'Guest (Self-Order)',
-              paymentId: payment.razorpay_payment_id || payment.id,
-              paymentMethod: 'razorpay_checkout',
-              isGuestOrder: true,
-              tokenNumber: token,
-              printPending: true,
+          // Open modal but don't block — just close it if handler fires automatically
+          openRazorpayCheckout({ razorpayOrderId: rzpOId, amountRupees: total, orderId })
+            .then((payment) => {
+              if (cancelled) return;
+              handlePaymentSuccess(payment.razorpay_payment_id || payment.id);
+            })
+            .catch((err) => {
+              if (err?.message === 'dismissed' && !cancelled) {
+                // Only go back if user explicitly closed without paying
+                // Don't go back automatically — they may have paid via UPI QR
+              }
             });
-          } catch (tokenErr) {
-            // Token failed — generate a local fallback so customer still sees something
-            const fallback = `T${String(Date.now()).slice(-3)}`;
-            if (!cancelled) setTokenNumber(fallback);
-            console.warn('Token/save error:', tokenErr);
-          }
         } catch (err) {
-          if (cancelled) return;
-          if (err?.message === 'dismissed') { navigation.goBack(); }
-          else { setErrorMsg(err.message || 'Payment failed'); setState(STATE.ERROR); }
+          if (!cancelled) { setErrorMsg(err.message || 'Payment failed'); setState(STATE.ERROR); }
         }
       } else {
         try {
@@ -124,6 +115,32 @@ export default function GuestPaymentScreen({ navigation, route }) {
 
   useEffect(() => { return () => clearInterval(pollRef.current); }, []);
 
+  async function handlePaymentSuccess(paymentId = 'manual') {
+    setState(STATE.CONFIRMED);
+    try {
+      const token = await getNextToken();
+      setTokenNumber(token);
+      await saveOrder({
+        orderId, items, subtotal, tax, total,
+        employeeName: 'Guest (Self-Order)',
+        paymentId,
+        paymentMethod: 'razorpay_checkout',
+        isGuestOrder: true,
+        tokenNumber: token,
+        printPending: true,
+      });
+    } catch {
+      const fallback = `T${String(Date.now()).slice(-3)}`;
+      setTokenNumber(fallback);
+    }
+  }
+
+  function handleIvePaid() {
+    // Close the Razorpay modal if still open then confirm
+    try { document.querySelector('.razorpay-backdrop')?.click(); } catch {}
+    handlePaymentSuccess('manual-confirmed');
+  }
+
   const qrSize = isTablet ? 260 : 220;
 
   const Panel = () => (
@@ -140,6 +157,11 @@ export default function GuestPaymentScreen({ navigation, route }) {
           <ActivityIndicator size="large" color={THEME.gold} />
           <Text style={styles.cardTitle}>Complete payment in the popup</Text>
           <Text style={styles.cardHint}>Amount: {formatCurrency(total)}</Text>
+          <View style={styles.divider} />
+          <Text style={styles.paidHint}>Paid via UPI QR on your phone?</Text>
+          <TouchableOpacity style={styles.ivePaidBtn} onPress={handleIvePaid}>
+            <Text style={styles.ivePaidText}>✅  I've Paid — Get My Token</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -244,6 +266,13 @@ const styles = StyleSheet.create({
   cardHint: { fontSize: 13, color: THEME.slate, marginTop: 8, textAlign: 'center' },
   retryBtn: { marginTop: 20, backgroundColor: THEME.gold, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10 },
   retryText: { color: THEME.navy, fontWeight: 'bold', fontSize: 15 },
+  divider: { height: 1, backgroundColor: THEME.rowBorder, width: '100%', marginVertical: 16 },
+  paidHint: { fontSize: 13, color: THEME.slate, marginBottom: 10 },
+  ivePaidBtn: {
+    backgroundColor: THEME.navy, borderRadius: 10, paddingVertical: 14,
+    paddingHorizontal: 24, alignItems: 'center', width: '100%',
+  },
+  ivePaidText: { color: THEME.white, fontWeight: 'bold', fontSize: 15 },
 
   qrSection: { alignItems: 'center', marginTop: 8 },
   qrTitle: { fontSize: 22, fontWeight: 'bold', color: THEME.navy, marginBottom: 4 },
