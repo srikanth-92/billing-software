@@ -5,12 +5,15 @@ import {
 } from 'react-native';
 import { useLayout } from '../utils/dimensions';
 import { MENU_ITEMS, RESTAURANT_NAME } from '../constants';
-import { saveWeeklyMenu, loadWeeklyMenu, loadOrdersForDays, lastNDays } from '../utils/storage';
+import { clearSession } from '../utils/session';
+import { saveWeeklyMenu, loadWeeklyMenu, loadOrdersForDays, lastNDays, loadAllCartOverrides, saveCartOverrides } from '../utils/storage';
 import { formatCurrency } from '../utils/razorpay';
 import { THEME } from '../constants/theme';
+import DayMenuScreen from './DayMenuScreen';
 
 const MEAL_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
-const TABS = ['Menu Editor', 'Staff Preview', 'Vendor Dashboard'];
+const TABS = ["Day's Menu", 'Menu Editor', 'Staff Preview', 'Cart Stock', 'Vendor Dashboard'];
+const VENDORS = ['cart1', 'cart2', 'cart3', 'cart4', 'cart5'];
 
 const CATEGORY_META = {
   Breakfast: { emoji: '🌅', color: '#ea580c', bg: '#fff7ed' },
@@ -29,7 +32,6 @@ function getMealTabForTime() {
   return 'Breakfast';
 }
 
-// Seed from static constants so admin always has a starting point
 function seedMenuFromConstants() {
   const menu = {};
   MEAL_CATEGORIES.forEach((cat) => {
@@ -42,89 +44,66 @@ function seedMenuFromConstants() {
   return menu;
 }
 
-export default function AdminScreen({ navigation, route }) {
-  const { employee } = route.params;
-  const [activeTab, setActiveTab] = useState('Menu Editor');
+function formatDate(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', {
+    weekday: 'short', day: 'numeric', month: 'short',
+  });
+}
+
+// ── MenuEditor owns ALL its state so typing never triggers a parent re-render ─
+function MenuEditor({ initialMenu, onSave }) {
   const [activeMeal, setActiveMeal] = useState('Breakfast');
-
-  // ── Menu editor state ─────────────────────────────────────────────────────
-  const [menu, setMenu] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [editMenu, setEditMenu] = useState(initialMenu);
   const [newItem, setNewItem] = useState({ name: '', price: '', emoji: '', description: '' });
+  const [addError, setAddError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  // ── Dashboard state ───────────────────────────────────────────────────────
-  const [ordersByDay, setOrdersByDay] = useState({});
-  const [dashLoading, setDashLoading] = useState(true);
-
-  const loadAll = useCallback(async () => {
-    const [stored, orders] = await Promise.all([
-      loadWeeklyMenu(),
-      loadOrdersForDays(7),
-    ]);
-    const seed = seedMenuFromConstants();
-    if (!stored) {
-      setMenu(seed);
-    } else {
-      // Backfill any category missing from an older saved menu
-      const merged = { ...stored };
-      MEAL_CATEGORIES.forEach((cat) => {
-        if (!merged[cat] || merged[cat].length === 0) merged[cat] = seed[cat];
-      });
-      setMenu(merged);
+  // If parent loads data after first render (Firestore async), hydrate once
+  useEffect(() => {
+    if (initialMenu && !editMenu) {
+      setEditMenu(initialMenu);
     }
-    setOrdersByDay(orders);
-    setDashLoading(false);
-  }, []);
+  }, [initialMenu]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
-
-  function handleLogout() {
-    Alert.alert('Logout', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => navigation.replace('Login') },
-    ]);
+  if (!editMenu) {
+    return <ActivityIndicator style={{ marginTop: 60 }} color="#f97316" size="large" />;
   }
 
-  // ── Menu editor helpers ───────────────────────────────────────────────────
+  const items = editMenu[activeMeal] || [];
 
-  function updatePrice(cat, id, val) {
-    setMenu((prev) => ({
+  function updateName(cat, id, val) {
+    setEditMenu((prev) => ({
       ...prev,
-      [cat]: prev[cat].map((item) =>
-        item.id === id ? { ...item, price: parseFloat(val) || 0 } : item
-      ),
+      [cat]: prev[cat].map((item) => item.id === id ? { ...item, name: val } : item),
     }));
   }
 
-  function updateName(cat, id, val) {
-    setMenu((prev) => ({
+  function updatePrice(cat, id, val) {
+    setEditMenu((prev) => ({
       ...prev,
-      [cat]: prev[cat].map((item) =>
-        item.id === id ? { ...item, name: val } : item
-      ),
+      [cat]: prev[cat].map((item) => item.id === id ? { ...item, price: val } : item),
     }));
   }
 
   function removeItem(cat, id) {
-    setMenu((prev) => ({ ...prev, [cat]: prev[cat].filter((i) => i.id !== id) }));
+    setEditMenu((prev) => ({ ...prev, [cat]: prev[cat].filter((i) => i.id !== id) }));
   }
 
   function addItem() {
     const name = newItem.name.trim();
     const price = parseFloat(newItem.price);
     if (!name || isNaN(price) || price <= 0) {
-      Alert.alert('Invalid item', 'Please enter a name and a valid price.');
+      setAddError('Please enter a name and a valid price.');
       return;
     }
+    setAddError('');
     const id = `custom_${Date.now()}`;
-    setMenu((prev) => ({
+    setEditMenu((prev) => ({
       ...prev,
       [activeMeal]: [
         ...prev[activeMeal],
         {
-          id,
-          name,
-          price,
+          id, name, price,
           emoji: newItem.emoji.trim() || '🍽️',
           description: newItem.description.trim(),
           category: activeMeal,
@@ -135,34 +114,210 @@ export default function AdminScreen({ navigation, route }) {
   }
 
   async function handleSave() {
+    // Normalise price strings to numbers before persisting
+    const processed = {};
+    Object.keys(editMenu).forEach((cat) => {
+      processed[cat] = editMenu[cat].map((item) => ({
+        ...item,
+        price: typeof item.price === 'string' ? (parseFloat(item.price) || 0) : item.price,
+      }));
+    });
     setSaving(true);
-    await saveWeeklyMenu(menu);
+    await onSave(processed);
     setSaving(false);
-    Alert.alert('Saved', 'Weekly menu has been updated for all vendors.');
   }
 
-  // ── Dashboard helpers ─────────────────────────────────────────────────────
+  return (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.editorContent}>
+      {/* Meal selector */}
+      <View style={styles.mealTabs}>
+        {MEAL_CATEGORIES.map((cat) => (
+          <TouchableOpacity
+            key={cat}
+            style={[styles.mealTab, activeMeal === cat && styles.mealTabActive]}
+            onPress={() => setActiveMeal(cat)}
+          >
+            <Text style={[styles.mealTabText, activeMeal === cat && styles.mealTabTextActive]}>{cat}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Existing items */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{activeMeal} Items</Text>
+        {items.map((item) => (
+          <View key={item.id} style={styles.editorRow}>
+            <Text style={styles.editorEmoji}>{item.emoji}</Text>
+            <TextInput
+              style={styles.nameInput}
+              value={item.name}
+              onChangeText={(v) => updateName(activeMeal, item.id, v)}
+              placeholder="Item name"
+            />
+            <View style={styles.priceInputWrap}>
+              <Text style={styles.rupee}>₹</Text>
+              <TextInput
+                style={styles.priceInput}
+                value={String(item.price)}
+                onChangeText={(v) => updatePrice(activeMeal, item.id, v)}
+                keyboardType="numeric"
+                placeholder="0"
+              />
+            </View>
+            <TouchableOpacity onPress={() => removeItem(activeMeal, item.id)} style={styles.removeBtn}>
+              <Text style={styles.removeBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      {/* Add new item */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Add New Item to {activeMeal}</Text>
+        <View style={styles.addRow}>
+          <TextInput
+            style={[styles.newInput, { width: 44 }]}
+            value={newItem.emoji}
+            onChangeText={(v) => setNewItem((p) => ({ ...p, emoji: v }))}
+            placeholder="🍽️"
+          />
+          <TextInput
+            style={[styles.newInput, { flex: 1 }]}
+            value={newItem.name}
+            onChangeText={(v) => { setAddError(''); setNewItem((p) => ({ ...p, name: v })); }}
+            placeholder="Item name"
+          />
+          <View style={styles.priceInputWrap}>
+            <Text style={styles.rupee}>₹</Text>
+            <TextInput
+              style={styles.priceInput}
+              value={newItem.price}
+              onChangeText={(v) => { setAddError(''); setNewItem((p) => ({ ...p, price: v })); }}
+              keyboardType="numeric"
+              placeholder="0"
+            />
+          </View>
+        </View>
+        <TextInput
+          style={[styles.newInput, { marginTop: 8 }]}
+          value={newItem.description}
+          onChangeText={(v) => setNewItem((p) => ({ ...p, description: v }))}
+          placeholder="Description (optional)"
+        />
+        {addError ? <Text style={styles.addError}>{addError}</Text> : null}
+        <TouchableOpacity style={styles.addBtn} onPress={addItem}>
+          <Text style={styles.addBtnText}>+ Add Item to {activeMeal}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Save */}
+      <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
+        {saving
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.saveBtnText}>Save Menu for All Vendors</Text>}
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function AdminScreen({ navigation, route }) {
+  const { employee } = route.params;
+  const [activeTab, setActiveTab] = useState("Day's Menu");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // ── Shared menu state (read-only; MenuEditor owns its own editable copy) ──
+  const [initialMenu, setInitialMenu] = useState(null);
+
+  // ── Dashboard state ────────────────────────────────────────────────────────
+  const [ordersByDay, setOrdersByDay] = useState({});
+  const [dashLoading, setDashLoading] = useState(true);
+
+  // ── Cart overrides state ───────────────────────────────────────────────────
+  // { [cartId]: Set<itemId> } — which items are disabled per cart
+  const [cartOverrides, setCartOverrides] = useState({});
+
+  const loadAll = useCallback(async () => {
+    const [stored, orders, overrides] = await Promise.all([
+      loadWeeklyMenu(),
+      loadOrdersForDays(7),
+      loadAllCartOverrides(),
+    ]);
+    const seed = seedMenuFromConstants();
+    if (!stored) {
+      setInitialMenu(seed);
+    } else {
+      const merged = { ...stored };
+      MEAL_CATEGORIES.forEach((cat) => {
+        if (!merged[cat] || merged[cat].length === 0) merged[cat] = seed[cat];
+      });
+      setInitialMenu(merged);
+    }
+    setOrdersByDay(orders);
+    setDashLoading(false);
+    // Convert arrays to Sets for O(1) lookup
+    const mapped = {};
+    Object.entries(overrides).forEach(([cartId, ids]) => {
+      mapped[cartId] = new Set(ids);
+    });
+    setCartOverrides(mapped);
+  }, []);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  async function handleRefresh() {
+    setInitialMenu(null);
+    setDashLoading(true);
+    await loadAll();
+    setRefreshKey((k) => k + 1);
+  }
+
+  async function handleSave(menuData) {
+    try {
+      await saveWeeklyMenu(menuData);
+      setInitialMenu(menuData);
+      setRefreshKey((k) => k + 1);
+      if (Platform.OS === 'web') window.alert('Weekly menu has been updated for all vendors.');
+      else Alert.alert('Saved', 'Weekly menu has been updated for all vendors.');
+    } catch (e) {
+      if (Platform.OS === 'web') window.alert(e.message || 'Could not save menu. Check your connection.');
+      else Alert.alert('Save Failed', e.message || 'Could not save menu. Check your connection.');
+    }
+  }
+
+  function handleLogout() {
+    clearSession();
+    navigation.replace('Login');
+  }
+
+  // ── Dashboard helpers ──────────────────────────────────────────────────────
 
   function buildDashboard() {
+    const label = (o) => o.isGuestOrder
+      ? `Guest · ${(o.cartId || 'cart').toUpperCase()}`
+      : o.employeeName;
     const days = lastNDays(7);
-    // Per-day per-vendor revenue
     const rows = days.map((day) => {
       const orders = ordersByDay[day] || [];
       const vendors = {};
+      const vendorItems = {};
       orders.forEach((o) => {
-        vendors[o.employeeName] = (vendors[o.employeeName] || 0) + o.total;
+        const key = label(o);
+        vendors[key] = (vendors[key] || 0) + o.total;
+        if (!vendorItems[key]) vendorItems[key] = [];
+        (o.items || []).forEach((item) => vendorItems[key].push(`${item.name} ×${item.qty}`));
       });
       const dayTotal = orders.reduce((s, o) => s + o.total, 0);
-      return { day, vendors, dayTotal, orderCount: orders.length };
+      return { day, vendors, vendorItems, dayTotal, orderCount: orders.length };
     });
-    // All vendor names seen across all days
     const vendorNames = [...new Set(
-      Object.values(ordersByDay).flatMap((os) => os.map((o) => o.employeeName))
+      Object.values(ordersByDay).flatMap((os) => os.map(label))
     )].sort();
     return { rows, vendorNames };
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Header ─────────────────────────────────────────────────────────────────
 
   const Header = () => (
     <View style={styles.header}>
@@ -170,133 +325,46 @@ export default function AdminScreen({ navigation, route }) {
         <Text style={styles.headerTitle}>{RESTAURANT_NAME}</Text>
         <Text style={styles.headerSub}>Admin · {employee.name}</Text>
       </View>
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
+      <View style={styles.headerRight}>
+        <TouchableOpacity onPress={() => navigation.navigate('AllQR')} style={styles.allQrBtn}>
+          <Text style={styles.allQrBtnText}>All QRs</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   const TabBar = () => (
-    <View style={styles.tabBar}>
-      {TABS.map((t) => (
-        <TouchableOpacity
-          key={t}
-          style={[styles.tab, activeTab === t && styles.tabActive]}
-          onPress={() => setActiveTab(t)}
-        >
-          <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>{t}</Text>
-        </TouchableOpacity>
-      ))}
+    <View style={styles.tabBarWrap}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={styles.tabBar}>
+        {TABS.map((t) => (
+          <TouchableOpacity
+            key={t}
+            style={[styles.tab, activeTab === t && styles.tabActive]}
+            onPress={() => setActiveTab(t)}
+          >
+            <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>{t}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh}>
+        <Text style={styles.refreshBtnText}>↺</Text>
+      </TouchableOpacity>
     </View>
   );
 
-  // ── Menu editor ───────────────────────────────────────────────────────────
-
-  const MenuEditor = () => {
-    if (!menu) return <ActivityIndicator style={{ marginTop: 60 }} color="#f97316" size="large" />;
-    const items = menu[activeMeal] || [];
-    return (
-      <ScrollView contentContainerStyle={styles.editorContent}>
-        {/* Meal selector */}
-        <View style={styles.mealTabs}>
-          {MEAL_CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[styles.mealTab, activeMeal === cat && styles.mealTabActive]}
-              onPress={() => setActiveMeal(cat)}
-            >
-              <Text style={[styles.mealTabText, activeMeal === cat && styles.mealTabTextActive]}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Existing items */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{activeMeal} Items</Text>
-          {items.map((item) => (
-            <View key={item.id} style={styles.editorRow}>
-              <Text style={styles.editorEmoji}>{item.emoji}</Text>
-              <TextInput
-                style={styles.nameInput}
-                value={item.name}
-                onChangeText={(v) => updateName(activeMeal, item.id, v)}
-                placeholder="Item name"
-              />
-              <View style={styles.priceInputWrap}>
-                <Text style={styles.rupee}>₹</Text>
-                <TextInput
-                  style={styles.priceInput}
-                  value={String(item.price)}
-                  onChangeText={(v) => updatePrice(activeMeal, item.id, v)}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-              <TouchableOpacity onPress={() => removeItem(activeMeal, item.id)} style={styles.removeBtn}>
-                <Text style={styles.removeBtnText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-
-        {/* Add new item */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Add New Item to {activeMeal}</Text>
-          <View style={styles.addRow}>
-            <TextInput
-              style={[styles.newInput, { width: 44 }]}
-              value={newItem.emoji}
-              onChangeText={(v) => setNewItem((p) => ({ ...p, emoji: v }))}
-              placeholder="🍽️"
-            />
-            <TextInput
-              style={[styles.newInput, { flex: 1 }]}
-              value={newItem.name}
-              onChangeText={(v) => setNewItem((p) => ({ ...p, name: v }))}
-              placeholder="Item name"
-            />
-            <View style={styles.priceInputWrap}>
-              <Text style={styles.rupee}>₹</Text>
-              <TextInput
-                style={styles.priceInput}
-                value={newItem.price}
-                onChangeText={(v) => setNewItem((p) => ({ ...p, price: v }))}
-                keyboardType="numeric"
-                placeholder="0"
-              />
-            </View>
-          </View>
-          <TextInput
-            style={[styles.newInput, { marginTop: 8 }]}
-            value={newItem.description}
-            onChangeText={(v) => setNewItem((p) => ({ ...p, description: v }))}
-            placeholder="Description (optional)"
-          />
-          <TouchableOpacity style={styles.addBtn} onPress={addItem}>
-            <Text style={styles.addBtnText}>+ Add Item</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Save */}
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-          {saving
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.saveBtnText}>Save Menu for All Vendors</Text>}
-        </TouchableOpacity>
-      </ScrollView>
-    );
-  };
-
-  // ── Staff preview ─────────────────────────────────────────────────────────
+  // ── Staff preview ──────────────────────────────────────────────────────────
 
   const StaffPreview = () => {
     const { isTablet } = useLayout();
     const [previewTab, setPreviewTab] = useState(getMealTabForTime);
     const [cart, setCart] = useState({});
 
-    if (!menu) return <ActivityIndicator style={{ marginTop: 60 }} color="#f97316" size="large" />;
+    if (!initialMenu) return <ActivityIndicator style={{ marginTop: 60 }} color="#f97316" size="large" />;
 
-    const allItems = Object.values(menu).flat();
+    const allItems = Object.values(initialMenu).flat();
     function increment(id) { setCart((p) => ({ ...p, [id]: (p[id] || 0) + 1 })); }
     function decrement(id) {
       setCart((p) => { const n = { ...p, [id]: (p[id] || 1) - 1 }; if (n[id] <= 0) delete n[id]; return n; });
@@ -307,16 +375,15 @@ export default function AdminScreen({ navigation, route }) {
     const totalItems = Object.values(cart).reduce((s, q) => s + q, 0);
 
     const meta = CATEGORY_META[previewTab] || CATEGORY_META['Breakfast'];
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     const MenuPanel = () => (
       <ScrollView style={styles.previewLeft} contentContainerStyle={{ paddingBottom: isTablet ? 40 : 110 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.previewTabBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }} contentContainerStyle={styles.previewTabBar}>
           {ALL_CATEGORIES.map((cat) => {
             const m = CATEGORY_META[cat];
             const active = cat === previewTab;
-            const count = (menu[cat] || []).filter((i) => cart[i.id] > 0).length;
+            const count = (initialMenu[cat] || []).filter((i) => cart[i.id] > 0).length;
             return (
               <TouchableOpacity
                 key={cat}
@@ -339,7 +406,7 @@ export default function AdminScreen({ navigation, route }) {
             <Text style={styles.previewCatEmoji}>{meta.emoji}</Text>
             <Text style={[styles.previewCatTitle, { color: meta.color }]}>{previewTab}</Text>
           </View>
-          {(menu[previewTab] || []).map((item, idx, arr) => (
+          {(initialMenu[previewTab] || []).map((item, idx, arr) => (
             <View key={item.id}>
               <View style={styles.previewItemRow}>
                 <Text style={styles.previewItemEmoji}>{item.emoji}</Text>
@@ -364,7 +431,7 @@ export default function AdminScreen({ navigation, route }) {
               {idx < arr.length - 1 && <View style={styles.previewDivider} />}
             </View>
           ))}
-          {(menu[previewTab] || []).length === 0 && (
+          {(initialMenu[previewTab] || []).length === 0 && (
             <Text style={styles.previewEmpty}>No items configured for this meal.</Text>
           )}
         </View>
@@ -405,11 +472,10 @@ export default function AdminScreen({ navigation, route }) {
     );
 
     return (
-      <View style={styles.previewContainer}>
+      <View style={[styles.previewContainer, { flex: 1 }]}>
         <View style={styles.previewBanner}>
           <Text style={styles.previewBannerText}>👁  Staff view · {timeStr}</Text>
         </View>
-
         {isTablet ? (
           <View style={styles.previewBody}>
             <MenuPanel />
@@ -435,7 +501,7 @@ export default function AdminScreen({ navigation, route }) {
     );
   };
 
-  // ── Vendor dashboard ──────────────────────────────────────────────────────
+  // ── Vendor dashboard ───────────────────────────────────────────────────────
 
   const Dashboard = () => {
     if (dashLoading) return <ActivityIndicator style={{ marginTop: 60 }} color="#f97316" size="large" />;
@@ -453,9 +519,8 @@ export default function AdminScreen({ navigation, route }) {
     }
 
     return (
-      <ScrollView contentContainerStyle={styles.dashContent}>
-        {/* Summary cards */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.summaryRow}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.dashContent}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }} contentContainerStyle={styles.summaryRow}>
           {vendorNames.map((vname) => {
             const total = rows.reduce((s, r) => s + (r.vendors[vname] || 0), 0);
             const orders = Object.values(ordersByDay).flat().filter((o) => o.employeeName === vname).length;
@@ -468,9 +533,7 @@ export default function AdminScreen({ navigation, route }) {
             );
           })}
         </ScrollView>
-
-        {/* Day-by-day table */}
-        {rows.filter((r) => r.orderCount > 0).map(({ day, vendors, dayTotal, orderCount }) => (
+        {rows.filter((r) => r.orderCount > 0).map(({ day, vendors, vendorItems, dayTotal, orderCount }) => (
           <View key={day} style={styles.dayCard}>
             <View style={styles.dayHeader}>
               <Text style={styles.dayDate}>{formatDate(day)}</Text>
@@ -482,7 +545,14 @@ export default function AdminScreen({ navigation, route }) {
             {vendorNames.filter((v) => vendors[v]).map((vname) => (
               <View key={vname} style={styles.vendorRow}>
                 <View style={styles.vendorDot} />
-                <Text style={styles.vendorName}>{vname}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.vendorName}>{vname}</Text>
+                  {vendorItems[vname]?.length > 0 && (
+                    <Text style={styles.vendorItemList} numberOfLines={2}>
+                      {vendorItems[vname].join(', ')}
+                    </Text>
+                  )}
+                </View>
                 <Text style={styles.vendorRevenue}>{formatCurrency(vendors[vname])}</Text>
               </View>
             ))}
@@ -492,21 +562,147 @@ export default function AdminScreen({ navigation, route }) {
     );
   };
 
+  // ── Cart Stock Editor ──────────────────────────────────────────────────────
+
+  const CartStockEditor = () => {
+    const [selectedCart, setSelectedCart] = useState(VENDORS[0]);
+    const [saving, setSaving] = useState(false);
+    const [localDisabled, setLocalDisabled] = useState(
+      () => new Set(cartOverrides[VENDORS[0]] || [])
+    );
+
+    function selectCart(cartId) {
+      setSelectedCart(cartId);
+      setLocalDisabled(new Set(cartOverrides[cartId] || []));
+    }
+
+    function toggle(itemId) {
+      setLocalDisabled((prev) => {
+        const next = new Set(prev);
+        if (next.has(itemId)) next.delete(itemId);
+        else next.add(itemId);
+        return next;
+      });
+    }
+
+    async function handleSave() {
+      setSaving(true);
+      try {
+        const ids = [...localDisabled];
+        await saveCartOverrides(selectedCart, ids);
+        setCartOverrides((prev) => ({ ...prev, [selectedCart]: new Set(ids) }));
+        if (Platform.OS === 'web') window.alert(`Stock updated for ${selectedCart}.`);
+        else Alert.alert('Saved', `Stock updated for ${selectedCart}.`);
+      } catch (e) {
+        if (Platform.OS === 'web') window.alert(e.message || 'Could not save.');
+        else Alert.alert('Error', e.message || 'Could not save.');
+      } finally {
+        setSaving(false);
+      }
+    }
+
+    if (!initialMenu) return <ActivityIndicator style={{ marginTop: 60 }} color="#f97316" size="large" />;
+
+    const allItems = Object.values(initialMenu).flat();
+    const byCategory = MEAL_CATEGORIES.reduce((acc, cat) => {
+      acc[cat] = allItems.filter((i) => i.category === cat);
+      return acc;
+    }, {});
+    const disabledCount = localDisabled.size;
+
+    return (
+      <ScrollView style={[{ flex: 1 }, Platform.OS === 'web' && { height: 0 }]} contentContainerStyle={styles.editorContent}>
+        {/* Cart selector */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }} contentContainerStyle={{ gap: 10, paddingBottom: 16 }}>
+          {VENDORS.map((cartId) => {
+            const overrideCount = (cartOverrides[cartId] || new Set()).size;
+            const active = cartId === selectedCart;
+            return (
+              <TouchableOpacity
+                key={cartId}
+                style={[styles.cartChip, active && styles.cartChipActive]}
+                onPress={() => selectCart(cartId)}
+              >
+                <Text style={[styles.cartChipText, active && styles.cartChipTextActive]}>
+                  {cartId.toUpperCase()}
+                </Text>
+                {overrideCount > 0 && (
+                  <View style={[styles.cartChipBadge, active && { backgroundColor: '#fff' }]}>
+                    <Text style={[styles.cartChipBadgeText, active && { color: '#ef4444' }]}>
+                      {overrideCount} off
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Status bar */}
+        <View style={styles.stockStatusBar}>
+          <Text style={styles.stockStatusText}>
+            {selectedCart.toUpperCase()} · {allItems.length - disabledCount} available · {disabledCount} unavailable
+          </Text>
+        </View>
+
+        {/* Per-category item toggles */}
+        {MEAL_CATEGORIES.map((cat) => {
+          const items = byCategory[cat] || [];
+          const meta = CATEGORY_META[cat];
+          return (
+            <View key={cat} style={[styles.card, { marginBottom: 16 }]}>
+              <View style={[styles.stockCatHeader, { backgroundColor: meta.bg }]}>
+                <Text style={styles.catEmoji}>{meta.emoji}</Text>
+                <Text style={[styles.cardTitle, { color: meta.color, marginBottom: 0 }]}>{cat}</Text>
+              </View>
+              {items.map((item, idx) => {
+                const isOff = localDisabled.has(item.id);
+                return (
+                  <View key={item.id}>
+                    <TouchableOpacity
+                      style={styles.stockRow}
+                      onPress={() => toggle(item.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.stockEmoji, isOff && styles.stockOff]}>{item.emoji}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.stockName, isOff && styles.stockOff]}>{item.name}</Text>
+                        <Text style={styles.stockPrice}>₹{item.price}</Text>
+                      </View>
+                      <View style={[styles.stockToggle, isOff ? styles.stockToggleOff : styles.stockToggleOn]}>
+                        <Text style={styles.stockToggleText}>{isOff ? 'Out of Stock' : 'Available'}</Text>
+                      </View>
+                    </TouchableOpacity>
+                    {idx < items.length - 1 && <View style={styles.divider} />}
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })}
+
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
+          {saving
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.saveBtnText}>Save Stock for {selectedCart.toUpperCase()}</Text>}
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Header />
       <TabBar />
-      {activeTab === 'Menu Editor' && <MenuEditor />}
-      {activeTab === 'Staff Preview' && <StaffPreview />}
-      {activeTab === 'Vendor Dashboard' && <Dashboard />}
+      <View style={{ flex: 1, minHeight: 0 }}>
+        {activeTab === "Day's Menu"      && <DayMenuScreen />}
+        {activeTab === 'Menu Editor'     && <MenuEditor key={refreshKey} initialMenu={initialMenu} onSave={handleSave} />}
+        {activeTab === 'Staff Preview'   && <StaffPreview key={refreshKey} />}
+        {activeTab === 'Cart Stock'      && <CartStockEditor key={refreshKey} />}
+        {activeTab === 'Vendor Dashboard'&& <Dashboard />}
+      </View>
     </SafeAreaView>
   );
-}
-
-function formatDate(dateStr) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', {
-    weekday: 'short', day: 'numeric', month: 'short',
-  });
 }
 
 const styles = StyleSheet.create({
@@ -518,17 +714,23 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.white },
   headerSub: { fontSize: 12, color: THEME.slateLight, marginTop: 2 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  allQrBtn: { backgroundColor: THEME.gold, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
+  allQrBtnText: { color: THEME.navy, fontSize: 13, fontWeight: '700' },
   logoutBtn: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
   logoutText: { color: THEME.white, fontSize: 13, fontWeight: '600' },
 
-  tabBar: { flexDirection: 'row', backgroundColor: THEME.white, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
-  tab: { flex: 1, paddingVertical: 13, alignItems: 'center' },
+  tabBarWrap: { flexDirection: 'row', backgroundColor: THEME.white, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', alignItems: 'stretch' },
+  tabBar: { flexDirection: 'row', alignItems: 'center' },
+  tab: { paddingHorizontal: 16, paddingVertical: 13, alignItems: 'center', flexShrink: 0 },
   tabActive: { borderBottomWidth: 3, borderBottomColor: '#f97316' },
-  tabText: { fontSize: 14, fontWeight: '600', color: THEME.slateLight },
+  tabText: { fontSize: 14, fontWeight: '600', color: THEME.slateLight, whiteSpace: 'nowrap' },
   tabTextActive: { color: THEME.gold },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 13, borderLeftWidth: 1, borderLeftColor: '#e2e8f0', flexShrink: 0 },
+  refreshBtnText: { fontSize: 16, fontWeight: '600', color: THEME.navy },
 
   // ── Menu editor ────────────────────────────────────────────────────────────
-  editorContent: { padding: 16, paddingBottom: 60 },
+  editorContent: { padding: 16, paddingBottom: 200 },
   mealTabs: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   mealTab: {
     flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5,
@@ -545,18 +747,18 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 14, fontWeight: '700', color: THEME.slate, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
 
   editorRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  editorEmoji: { fontSize: 24, width: 34 },
+  editorEmoji: { fontSize: 24, width: 34, flexShrink: 0 },
   nameInput: {
-    flex: 1, borderWidth: 1, borderColor: THEME.goldBorder, borderRadius: 8,
+    flex: 1, minWidth: 80, borderWidth: 1, borderColor: THEME.goldBorder, borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: THEME.text, backgroundColor: THEME.offWhite,
   },
   priceInputWrap: {
-    flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: THEME.goldBorder,
+    flexShrink: 0, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: THEME.goldBorder,
     borderRadius: 8, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: THEME.offWhite,
   },
   rupee: { fontSize: 14, color: THEME.slate, marginRight: 2 },
-  priceInput: { fontSize: 14, color: THEME.text, minWidth: 50 },
-  removeBtn: { padding: 6 },
+  priceInput: { fontSize: 14, color: THEME.text, width: 52 },
+  removeBtn: { padding: 6, flexShrink: 0 },
   removeBtnText: { fontSize: 16, color: '#ef4444' },
 
   addRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
@@ -564,17 +766,18 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: THEME.goldBorder, borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: THEME.text, backgroundColor: THEME.offWhite,
   },
-  addBtn: { marginTop: 12, backgroundColor: THEME.navy, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  addError: { color: '#ef4444', fontSize: 13, marginTop: 8 },
+  addBtn: { marginTop: 8, backgroundColor: THEME.navy, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   addBtnText: { color: THEME.white, fontWeight: 'bold', fontSize: 14 },
 
   saveBtn: { backgroundColor: THEME.navy, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
   saveBtnText: { color: THEME.white, fontWeight: 'bold', fontSize: 15 },
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
-  dashContent: { padding: 16, paddingBottom: 60 },
+  dashContent: { padding: 16, paddingBottom: 120 },
   summaryRow: { gap: 12, paddingBottom: 16 },
   summaryCard: {
-    backgroundColor: THEME.white, borderRadius: 14, padding: 18, minWidth: 160,
+    backgroundColor: THEME.white, borderRadius: 14, padding: 18, minWidth: 160, flexShrink: 0,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
     borderTopWidth: 3, borderTopColor: '#f97316',
   },
@@ -596,12 +799,13 @@ const styles = StyleSheet.create({
   dayOrders: { fontSize: 11, color: THEME.slateLight },
   dayTotal: { fontSize: 16, fontWeight: 'bold', color: THEME.gold },
   vendorRow: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 11,
+    flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 11,
     borderBottomWidth: 1, borderBottomColor: THEME.rowBorder,
   },
-  vendorDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: THEME.navy, marginRight: 10 },
-  vendorName: { flex: 1, fontSize: 14, color: '#334155' },
-  vendorRevenue: { fontSize: 14, fontWeight: '600', color: THEME.text },
+  vendorDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: THEME.navy, marginRight: 10, marginTop: 5 },
+  vendorName: { fontSize: 14, color: '#334155', fontWeight: '500' },
+  vendorItemList: { fontSize: 12, color: THEME.slateLight, marginTop: 2 },
+  vendorRevenue: { fontSize: 14, fontWeight: '600', color: THEME.text, marginLeft: 8 },
 
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
   emptyEmoji: { fontSize: 56, marginBottom: 16 },
@@ -618,7 +822,7 @@ const styles = StyleSheet.create({
 
   previewTabBar: { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
   previewTab: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
+    flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
     borderWidth: 1.5, borderColor: THEME.goldBorder, backgroundColor: THEME.white,
   },
@@ -678,4 +882,41 @@ const styles = StyleSheet.create({
   previewPhoneBarItems: { color: THEME.slateLight, fontSize: 12 },
   previewPhoneBarTotal: { color: THEME.gold, fontSize: 18, fontWeight: 'bold' },
   previewPhoneBarBtn: { backgroundColor: THEME.gold, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
+
+  // ── Cart Stock Editor ──────────────────────────────────────────────────────
+  divider: { height: 1, backgroundColor: THEME.rowBorder, marginLeft: 42 },
+  cartChip: {
+    paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20,
+    borderWidth: 1.5, borderColor: THEME.goldBorder, backgroundColor: THEME.white,
+    flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0,
+  },
+  cartChipActive: { backgroundColor: '#ef4444', borderColor: '#ef4444' },
+  cartChipText: { fontSize: 13, fontWeight: '700', color: THEME.slate },
+  cartChipTextActive: { color: THEME.white },
+  cartChipBadge: { backgroundColor: '#ef4444', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
+  cartChipBadgeText: { fontSize: 10, fontWeight: 'bold', color: '#fff' },
+
+  stockStatusBar: {
+    backgroundColor: '#f8fafc', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+    marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0',
+  },
+  stockStatusText: { fontSize: 13, fontWeight: '600', color: THEME.slate },
+
+  stockCatHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 16, paddingVertical: 10, marginHorizontal: -16, marginTop: -16, marginBottom: 8,
+    borderTopLeftRadius: 14, borderTopRightRadius: 14,
+  },
+  catEmoji: { fontSize: 18 },
+
+  stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10 },
+  stockEmoji: { fontSize: 24, width: 32 },
+  stockName: { fontSize: 14, fontWeight: '600', color: THEME.text },
+  stockPrice: { fontSize: 12, color: THEME.slateLight, marginTop: 2 },
+  stockOff: { color: THEME.slateLight, textDecorationLine: 'line-through' },
+
+  stockToggle: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14 },
+  stockToggleOn: { backgroundColor: '#dcfce7' },
+  stockToggleOff: { backgroundColor: '#fee2e2' },
+  stockToggleText: { fontSize: 12, fontWeight: '700', color: THEME.text },
 });
