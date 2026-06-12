@@ -124,6 +124,26 @@ export default function GuestPaymentScreen({ navigation, route }) {
     return () => clearInterval(pollRef.current);
   }, [state, qrId]);
 
+  // Poll Razorpay order status on web — handles the case where the guest pays via
+  // Paytm/Google Pay UPI QR inside the Razorpay modal. In that flow the payment
+  // completes on the phone but the browser tab never receives the redirect callback.
+  // Polling detects the captured payment and shows the token without any redirect.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (state !== STATE.AWAITING || !rzpOrderId) return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const status = await fetchRazorpayOrderStatus(rzpOrderId);
+        if (status === 'paid') {
+          clearInterval(pollRef.current);
+          closeRazorpayCheckout();
+          handlePaymentSuccess(rzpOrderId);
+        }
+      } catch {}
+    }, POLL_MS);
+    return () => clearInterval(pollRef.current);
+  }, [state, rzpOrderId]);
+
   useEffect(() => { return () => clearInterval(pollRef.current); }, []);
 
   async function handlePaymentSuccess(paymentId = 'manual') {
