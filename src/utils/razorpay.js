@@ -49,8 +49,6 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
         theme: { color: '#c9a840' },
         handler: resolve,
         modal: { ondismiss: () => reject(new Error('dismissed')) },
-        // redirect: true tells Razorpay to redirect to callback_url after payment
-        // instead of using the handler (which doesn't fire for cross-device UPI QR)
         ...(callbackUrl ? { callback_url: callbackUrl, redirect: true } : {}),
       };
       _rzpInstance = new window.Razorpay(options);

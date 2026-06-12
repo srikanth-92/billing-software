@@ -46,22 +46,16 @@ export default function GuestPaymentScreen({ navigation, route }) {
           if (cancelled) return;
           setState(STATE.AWAITING);
 
-          // Use redirect mode — Razorpay redirects to /guest-confirm after payment
-          // This works for ALL payment methods including cross-device UPI QR.
-          // Save order context to sessionStorage so GuestConfirmScreen can recover
-          // it even if React Navigation strips query params from the URL on reload.
-          sessionStorage.setItem('rzp_pending_order', JSON.stringify({
-            orderId, items, subtotal, tax, total, cartId, phone,
-          }));
-
-          const callbackUrl = `${window.location.origin}/guest-confirm?orderId=${orderId}&subtotal=${subtotal}&tax=${tax}&total=${total}&cartId=${encodeURIComponent(cartId)}&items=${encodeURIComponent(JSON.stringify(items))}${phone ? `&phone=${encodeURIComponent(phone)}` : ''}`;
-
+          // No redirect mode — handler fires in-page for all payment methods
+          // (cards, wallets, netbanking, UPI collect).
+          // For UPI QR scanned via Paytm/Google Pay, payment completes on the
+          // phone and the browser never receives a redirect; the order-status
+          // poller below detects capture and calls handlePaymentSuccess instead.
           openRazorpayCheckout({
-            razorpayOrderId: rzpOId, amountRupees: total, orderId, callbackUrl,
+            razorpayOrderId: rzpOId, amountRupees: total, orderId,
             prefill: phone ? { contact: phone } : {},
           })
             .then((payment) => {
-              // handler fires for non-redirect payments (card, wallet, netbanking)
               if (!cancelled) handlePaymentSuccess(payment.razorpay_payment_id || payment.id);
             })
             .catch(() => {});
