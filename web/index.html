@@ -24,6 +24,21 @@
       }
     </style>
     <link rel="icon" href="/favicon.ico" />
+    <!-- Capture Razorpay redirect params into sessionStorage before React
+         Navigation processes the URL and strips the query string. -->
+    <script>
+      (function () {
+        var p = new URLSearchParams(window.location.search);
+        var pid = p.get('razorpay_payment_id');
+        if (pid) {
+          sessionStorage.setItem('rzp_payment_params', JSON.stringify({
+            razorpay_payment_id: pid,
+            razorpay_order_id: p.get('razorpay_order_id') || '',
+            razorpay_signature: p.get('razorpay_signature') || '',
+          }));
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

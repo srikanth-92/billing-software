@@ -46,16 +46,23 @@ export default function GuestPaymentScreen({ navigation, route }) {
           if (cancelled) return;
           setState(STATE.AWAITING);
 
-          // No redirect mode — handler fires in-page for all payment methods
-          // (cards, wallets, netbanking, UPI collect).
-          // For UPI QR scanned via Paytm/Google Pay, payment completes on the
-          // phone and the browser never receives a redirect; the order-status
-          // poller below detects capture and calls handlePaymentSuccess instead.
+          // Stash order context before opening Razorpay so GuestConfirmScreen
+          // can recover it after the redirect (React Navigation strips query params).
+          sessionStorage.setItem('rzp_pending_order', JSON.stringify({
+            orderId, items, subtotal, tax, total, cartId, phone,
+          }));
+
+          // Use redirect mode so Razorpay's server triggers the callback_url
+          // navigation even when the browser tab was backgrounded (e.g. user
+          // switched to Paytm). Keep the URL short — no items — they're in sessionStorage.
+          const callbackUrl = `${window.location.origin}/guest-confirm?orderId=${encodeURIComponent(orderId)}&cartId=${encodeURIComponent(cartId)}`;
+
           openRazorpayCheckout({
-            razorpayOrderId: rzpOId, amountRupees: total, orderId,
+            razorpayOrderId: rzpOId, amountRupees: total, orderId, callbackUrl,
             prefill: phone ? { contact: phone } : {},
           })
             .then((payment) => {
+              // handler fires for non-redirect payments (card, wallet, netbanking)
               if (!cancelled) handlePaymentSuccess(payment.razorpay_payment_id || payment.id);
             })
             .catch(() => {});
@@ -118,24 +125,39 @@ export default function GuestPaymentScreen({ navigation, route }) {
     return () => clearInterval(pollRef.current);
   }, [state, qrId]);
 
-  // Poll Razorpay order status on web — handles the case where the guest pays via
-  // Paytm/Google Pay UPI QR inside the Razorpay modal. In that flow the payment
-  // completes on the phone but the browser tab never receives the redirect callback.
-  // Polling detects the captured payment and shows the token without any redirect.
+  // On web: poll order status every 3 s AND check immediately when the browser
+  // tab becomes visible again (user returns from Paytm/Google Pay).
+  // setInterval is suspended while Chrome is backgrounded, so without the
+  // visibilitychange hook the user returns to a frozen "waiting" screen.
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     if (state !== STATE.AWAITING || !rzpOrderId) return;
-    pollRef.current = setInterval(async () => {
+
+    let done = false;
+    async function checkStatus() {
+      if (done) return;
       try {
         const status = await fetchRazorpayOrderStatus(rzpOrderId);
         if (status === 'paid') {
+          done = true;
           clearInterval(pollRef.current);
+          document.removeEventListener('visibilitychange', onVisible);
           closeRazorpayCheckout();
           handlePaymentSuccess(rzpOrderId);
         }
       } catch {}
-    }, POLL_MS);
-    return () => clearInterval(pollRef.current);
+    }
+
+    function onVisible() {
+      if (!document.hidden) checkStatus();
+    }
+
+    document.addEventListener('visibilitychange', onVisible);
+    pollRef.current = setInterval(checkStatus, POLL_MS);
+    return () => {
+      clearInterval(pollRef.current);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [state, rzpOrderId]);
 
   useEffect(() => { return () => clearInterval(pollRef.current); }, []);

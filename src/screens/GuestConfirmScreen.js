@@ -22,31 +22,31 @@ export default function GuestConfirmScreen({ navigation }) {
         const paymentId = params.get('razorpay_payment_id');
         const rzpOrderId = params.get('razorpay_order_id');
 
-        // URL params may be stripped by React Navigation's deep-link handling
-        // (common when payment is completed inside Paytm/Google Pay in-app browser).
-        // Fall back to the copy we stashed in sessionStorage before launching Razorpay.
+        // The callback_url only carries orderId + cartId (kept short for mobile
+        // browsers). Full order context (items, amounts) lives in sessionStorage,
+        // written by GuestPaymentScreen before opening Razorpay.
+        // Also read the Razorpay payment params saved by web/index.html before
+        // React Navigation could strip them from window.location.search.
         let orderId = params.get('orderId');
         let cartId = params.get('cartId');
-        let subtotal = parseFloat(params.get('subtotal') || '0');
-        let tax = parseFloat(params.get('tax') || '0');
-        let totalAmt = parseFloat(params.get('total') || '0');
-        let items = (() => { try { return JSON.parse(decodeURIComponent(params.get('items') || '[]')); } catch { return []; } })();
+        let subtotal = 0, tax = 0, totalAmt = 0, items = [];
 
-        if (!orderId) {
-          const stored = sessionStorage.getItem('rzp_pending_order');
-          if (stored) {
-            const saved = JSON.parse(stored);
-            orderId = saved.orderId;
-            cartId = saved.cartId;
-            subtotal = saved.subtotal;
-            tax = saved.tax;
-            totalAmt = saved.total;
-            items = saved.items;
-          }
+        const stored = sessionStorage.getItem('rzp_pending_order');
+        if (stored) {
+          const saved = JSON.parse(stored);
+          if (!orderId) orderId = saved.orderId;
+          if (!cartId) cartId = saved.cartId;
+          subtotal = saved.subtotal;
+          tax = saved.tax;
+          totalAmt = saved.total;
+          items = saved.items;
         }
-
-        // Clear the stash regardless — one-time use
         sessionStorage.removeItem('rzp_pending_order');
+
+        // Recover Razorpay payment params captured in index.html before React loaded
+        const rzpParamsRaw = sessionStorage.getItem('rzp_payment_params');
+        const rzpParams = rzpParamsRaw ? JSON.parse(rzpParamsRaw) : {};
+        sessionStorage.removeItem('rzp_payment_params');
 
         cartId = cartId || 'cart1';
         setCartId(cartId);
@@ -64,7 +64,8 @@ export default function GuestConfirmScreen({ navigation }) {
           return;
         }
 
-        const resolvedPaymentId = paymentId || rzpOrderId || `manual_${Date.now()}`;
+        const resolvedPaymentId = paymentId || rzpParams.razorpay_payment_id
+          || rzpOrderId || rzpParams.razorpay_order_id || `manual_${Date.now()}`;
 
         const token = await getNextToken(cartId);
         setTokenNumber(token);
