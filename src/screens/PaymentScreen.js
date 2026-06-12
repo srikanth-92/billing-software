@@ -48,6 +48,27 @@ export default function PaymentScreen({ navigation, route }) {
   const [capturedPayment, setCapturedPayment] = useState(null);
   const { isTablet } = useLayout();
   const pollRef = useRef(null);
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
+  // Block back-navigation while payment is in progress (creating QR or awaiting payment)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      const s = stateRef.current;
+      if (s === STATE.CREATING_QR || s === STATE.AWAITING) {
+        e.preventDefault();
+        Alert.alert(
+          'Payment in Progress',
+          'A payment is being processed. Are you sure you want to go back? The payment may be lost.',
+          [
+            { text: 'Stay', style: 'cancel' },
+            { text: 'Go Back', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
+          ]
+        );
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   // On web: open Razorpay Checkout modal directly.
   // On native: create a QR code for UPI scanning.
@@ -78,16 +99,20 @@ export default function PaymentScreen({ navigation, route }) {
           if (cancelled) return;
           setCapturedPayment(payment);
           setState(STATE.CONFIRMED);
-          await saveOrder({
-            orderId,
-            items,
-            subtotal,
-            tax,
-            total,
-            employeeName: employee.name,
-            paymentId: payment.razorpay_payment_id || payment.id,
-            paymentMethod: 'razorpay_checkout',
-          });
+          try {
+            await saveOrder({
+              orderId,
+              items,
+              subtotal,
+              tax,
+              total,
+              employeeName: employee.name,
+              paymentId: payment.razorpay_payment_id || payment.id,
+              paymentMethod: 'razorpay_checkout',
+            });
+          } catch (saveErr) {
+            Alert.alert('Order Save Failed', `Payment was received but order could not be saved: ${saveErr.message}`);
+          }
         } catch (err) {
           if (cancelled) return;
           if (err?.message === 'dismissed') {
@@ -134,16 +159,20 @@ export default function PaymentScreen({ navigation, route }) {
           clearInterval(pollRef.current);
           setCapturedPayment(payment);
           setState(STATE.CONFIRMED);
-          await saveOrder({
-            orderId,
-            items,
-            subtotal,
-            tax,
-            total,
-            employeeName: employee.name,
-            paymentId: payment.id,
-            paymentMethod: payment.method || 'upi',
-          });
+          try {
+            await saveOrder({
+              orderId,
+              items,
+              subtotal,
+              tax,
+              total,
+              employeeName: employee.name,
+              paymentId: payment.id,
+              paymentMethod: payment.method || 'upi',
+            });
+          } catch (saveErr) {
+            Alert.alert('Order Save Failed', `Payment was received but order could not be saved: ${saveErr.message}`);
+          }
         }
       } catch {
         // silent — keep polling
@@ -292,7 +321,7 @@ export default function PaymentScreen({ navigation, route }) {
         </View>
       ) : (
         // Phone: stacked
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
           <OrderSummary items={items} subtotal={subtotal} tax={tax} total={total} orderId={orderId} />
           <QRPanel />
         </ScrollView>
@@ -302,7 +331,7 @@ export default function PaymentScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: THEME.offWhite },
+  container: { flex: 1, backgroundColor: THEME.offWhite, ...(Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' } : {}) },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 14,
@@ -311,7 +340,7 @@ const styles = StyleSheet.create({
   backBtn: { paddingVertical: 4, paddingRight: 8 },
   backText: { color: THEME.gold, fontSize: 15, fontWeight: '600' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.gold },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: 16, paddingBottom: 120 },
   tabletBody: { flex: 1, flexDirection: 'row' },
   tabletLeft: { flex: 1, borderRightWidth: 1, borderRightColor: THEME.goldBorder },
   tabletLeftContent: { padding: 24, paddingBottom: 40 },

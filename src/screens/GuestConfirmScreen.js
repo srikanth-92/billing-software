@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity,
+  View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, TouchableOpacity, Platform,
 } from 'react-native';
 import { THEME } from '../constants/theme';
-import { saveOrder, getNextToken } from '../utils/storage';
+import { saveOrder, getNextToken, getExistingOrder } from '../utils/storage';
 import { formatCurrency } from '../utils/razorpay';
 
 // This screen is loaded when Razorpay redirects back after payment.
@@ -13,26 +13,60 @@ export default function GuestConfirmScreen({ navigation }) {
   const [tokenNumber, setTokenNumber] = useState(null);
   const [total, setTotal] = useState(null);
   const [error, setError] = useState(null);
+  const [cartId, setCartId] = useState('cart1');
 
   useEffect(() => {
     async function confirm() {
       try {
         const params = new URLSearchParams(window.location.search);
         const paymentId = params.get('razorpay_payment_id');
-        const orderId = params.get('orderId');
-        const subtotal = parseFloat(params.get('subtotal') || '0');
-        const tax = parseFloat(params.get('tax') || '0');
-        const totalAmt = parseFloat(params.get('total') || '0');
-        const items = JSON.parse(decodeURIComponent(params.get('items') || '[]'));
+        const rzpOrderId = params.get('razorpay_order_id');
 
+        // URL params may be stripped by React Navigation's deep-link handling
+        // (common when payment is completed inside Paytm/Google Pay in-app browser).
+        // Fall back to the copy we stashed in sessionStorage before launching Razorpay.
+        let orderId = params.get('orderId');
+        let cartId = params.get('cartId');
+        let subtotal = parseFloat(params.get('subtotal') || '0');
+        let tax = parseFloat(params.get('tax') || '0');
+        let totalAmt = parseFloat(params.get('total') || '0');
+        let items = (() => { try { return JSON.parse(decodeURIComponent(params.get('items') || '[]')); } catch { return []; } })();
+
+        if (!orderId) {
+          const stored = sessionStorage.getItem('rzp_pending_order');
+          if (stored) {
+            const saved = JSON.parse(stored);
+            orderId = saved.orderId;
+            cartId = saved.cartId;
+            subtotal = saved.subtotal;
+            tax = saved.tax;
+            totalAmt = saved.total;
+            items = saved.items;
+          }
+        }
+
+        // Clear the stash regardless — one-time use
+        sessionStorage.removeItem('rzp_pending_order');
+
+        cartId = cartId || 'cart1';
+        setCartId(cartId);
         setTotal(totalAmt);
 
-        if (!paymentId || !orderId) {
-          setError('Payment details missing. Please contact staff.');
+        if (!orderId) {
+          setError('Order details missing. Please contact staff.');
           return;
         }
 
-        const token = await getNextToken();
+        // Idempotency check — if order already saved, reuse its token
+        const existing = await getExistingOrder(orderId);
+        if (existing) {
+          setTokenNumber(existing.tokenNumber);
+          return;
+        }
+
+        const resolvedPaymentId = paymentId || rzpOrderId || `manual_${Date.now()}`;
+
+        const token = await getNextToken(cartId);
         setTokenNumber(token);
 
         await saveOrder({
@@ -42,9 +76,10 @@ export default function GuestConfirmScreen({ navigation }) {
           tax,
           total: totalAmt,
           employeeName: 'Guest (Self-Order)',
-          paymentId,
+          paymentId: resolvedPaymentId,
           paymentMethod: 'razorpay_checkout',
           isGuestOrder: true,
+          cartId,
           tokenNumber: token,
           printPending: true,
         });
@@ -76,7 +111,7 @@ export default function GuestConfirmScreen({ navigation }) {
         <Text style={styles.headerSub}>Payment Confirmed</Text>
       </View>
 
-      <View style={styles.body}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body}>
         <Text style={styles.successEmoji}>✅</Text>
         <Text style={styles.successTitle}>Payment Successful!</Text>
 
@@ -92,16 +127,16 @@ export default function GuestConfirmScreen({ navigation }) {
         {total && <Text style={styles.amount}>{formatCurrency(total)} paid</Text>}
         <Text style={styles.sub}>Your bill is being printed at the counter.</Text>
 
-        <TouchableOpacity style={styles.newOrderBtn} onPress={() => window.location.href = '/guest'}>
+        <TouchableOpacity style={styles.newOrderBtn} onPress={() => navigation.replace('GuestMenu', { cartId })}>
           <Text style={styles.newOrderText}>+ New Order</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: THEME.offWhite },
+  container: { flex: 1, backgroundColor: THEME.offWhite, ...(Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' } : {}) },
   header: {
     backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 16,
     alignItems: 'center', borderBottomWidth: 1, borderBottomColor: THEME.goldBorder,
@@ -123,6 +158,7 @@ const styles = StyleSheet.create({
   tokenHint: { fontSize: 13, color: THEME.slate, textAlign: 'center', marginTop: 8 },
 
   amount: { fontSize: 20, fontWeight: 'bold', color: THEME.navy, marginBottom: 6 },
+  phoneLine: { fontSize: 14, color: THEME.navy, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
   sub: { fontSize: 13, color: THEME.slateLight, textAlign: 'center', marginBottom: 24 },
 
   newOrderBtn: {

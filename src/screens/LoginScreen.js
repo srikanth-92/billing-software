@@ -5,19 +5,35 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Image,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
   Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { EMPLOYEES, RESTAURANT_NAME } from '../constants';
 import { THEME } from '../constants/theme';
+import { saveSession, loadSession } from '../utils/session';
 
 export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // If session still valid (e.g. browser back button from Menu/Payment), redirect immediately
+  useFocusEffect(
+    React.useCallback(() => {
+      const employee = loadSession();
+      if (employee) {
+        if (employee.role === 'admin') {
+          navigation.replace('Admin', { employeeUsername: employee.username });
+        } else {
+          navigation.replace('Menu', { employeeUsername: employee.username });
+        }
+      }
+    }, [])
+  );
 
   function handleLogin() {
     const trimmedUser = username.trim().toLowerCase();
@@ -31,10 +47,11 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      saveSession(employee);
       if (employee.role === 'admin') {
-        navigation.replace('Admin', { employee });
+        navigation.replace('Admin', { employeeUsername: employee.username });
       } else {
-        navigation.replace('Menu', { employee });
+        navigation.replace('Menu', { employeeUsername: employee.username });
       }
     }, 500);
   }
@@ -44,6 +61,10 @@ export default function LoginScreen({ navigation }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={styles.card}>
         <Text style={styles.emoji}>🍽️</Text>
         <Text style={styles.restaurantName}>{RESTAURANT_NAME}</Text>
@@ -88,6 +109,7 @@ export default function LoginScreen({ navigation }) {
 
         <Text style={styles.hint}>Contact admin if you forgot your credentials.</Text>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -96,9 +118,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: THEME.navy,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    ...(Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' } : {}),
   },
   card: {
     backgroundColor: THEME.navyLight,

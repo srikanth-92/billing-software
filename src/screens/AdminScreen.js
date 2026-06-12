@@ -4,7 +4,7 @@ import {
   StyleSheet, SafeAreaView, Alert, ActivityIndicator, Platform,
 } from 'react-native';
 import { useLayout } from '../utils/dimensions';
-import { MENU_ITEMS, RESTAURANT_NAME } from '../constants';
+import { MENU_ITEMS, RESTAURANT_NAME, EMPLOYEES } from '../constants';
 import { clearSession } from '../utils/session';
 import { saveWeeklyMenu, loadWeeklyMenu, loadOrdersForDays, lastNDays, loadAllCartOverrides, saveCartOverrides } from '../utils/storage';
 import { formatCurrency } from '../utils/razorpay';
@@ -12,7 +12,7 @@ import { THEME } from '../constants/theme';
 import DayMenuScreen from './DayMenuScreen';
 
 const MEAL_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
-const TABS = ["Day's Menu", 'Menu Editor', 'Staff Preview', 'Cart Stock', 'Vendor Dashboard'];
+const TABS = ["Day's Menu", 'Staff Preview', 'Cart Stock', 'Vendor Dashboard'];
 const VENDORS = ['cart1', 'cart2', 'cart3', 'cart4', 'cart5'];
 
 const CATEGORY_META = {
@@ -50,184 +50,13 @@ function formatDate(dateStr) {
   });
 }
 
-// ── MenuEditor owns ALL its state so typing never triggers a parent re-render ─
-function MenuEditor({ initialMenu, onSave }) {
-  const [activeMeal, setActiveMeal] = useState('Breakfast');
-  const [editMenu, setEditMenu] = useState(initialMenu);
-  const [newItem, setNewItem] = useState({ name: '', price: '', emoji: '', description: '' });
-  const [addError, setAddError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  // If parent loads data after first render (Firestore async), hydrate once
-  useEffect(() => {
-    if (initialMenu && !editMenu) {
-      setEditMenu(initialMenu);
-    }
-  }, [initialMenu]);
-
-  if (!editMenu) {
-    return <ActivityIndicator style={{ marginTop: 60 }} color="#f97316" size="large" />;
-  }
-
-  const items = editMenu[activeMeal] || [];
-
-  function updateName(cat, id, val) {
-    setEditMenu((prev) => ({
-      ...prev,
-      [cat]: prev[cat].map((item) => item.id === id ? { ...item, name: val } : item),
-    }));
-  }
-
-  function updatePrice(cat, id, val) {
-    setEditMenu((prev) => ({
-      ...prev,
-      [cat]: prev[cat].map((item) => item.id === id ? { ...item, price: val } : item),
-    }));
-  }
-
-  function removeItem(cat, id) {
-    setEditMenu((prev) => ({ ...prev, [cat]: prev[cat].filter((i) => i.id !== id) }));
-  }
-
-  function addItem() {
-    const name = newItem.name.trim();
-    const price = parseFloat(newItem.price);
-    if (!name || isNaN(price) || price <= 0) {
-      setAddError('Please enter a name and a valid price.');
-      return;
-    }
-    setAddError('');
-    const id = `custom_${Date.now()}`;
-    setEditMenu((prev) => ({
-      ...prev,
-      [activeMeal]: [
-        ...prev[activeMeal],
-        {
-          id, name, price,
-          emoji: newItem.emoji.trim() || '🍽️',
-          description: newItem.description.trim(),
-          category: activeMeal,
-        },
-      ],
-    }));
-    setNewItem({ name: '', price: '', emoji: '', description: '' });
-  }
-
-  async function handleSave() {
-    // Normalise price strings to numbers before persisting
-    const processed = {};
-    Object.keys(editMenu).forEach((cat) => {
-      processed[cat] = editMenu[cat].map((item) => ({
-        ...item,
-        price: typeof item.price === 'string' ? (parseFloat(item.price) || 0) : item.price,
-      }));
-    });
-    setSaving(true);
-    await onSave(processed);
-    setSaving(false);
-  }
-
-  return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.editorContent}>
-      {/* Meal selector */}
-      <View style={styles.mealTabs}>
-        {MEAL_CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat}
-            style={[styles.mealTab, activeMeal === cat && styles.mealTabActive]}
-            onPress={() => setActiveMeal(cat)}
-          >
-            <Text style={[styles.mealTabText, activeMeal === cat && styles.mealTabTextActive]}>{cat}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Existing items */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{activeMeal} Items</Text>
-        {items.map((item) => (
-          <View key={item.id} style={styles.editorRow}>
-            <Text style={styles.editorEmoji}>{item.emoji}</Text>
-            <TextInput
-              style={styles.nameInput}
-              value={item.name}
-              onChangeText={(v) => updateName(activeMeal, item.id, v)}
-              placeholder="Item name"
-            />
-            <View style={styles.priceInputWrap}>
-              <Text style={styles.rupee}>₹</Text>
-              <TextInput
-                style={styles.priceInput}
-                value={String(item.price)}
-                onChangeText={(v) => updatePrice(activeMeal, item.id, v)}
-                keyboardType="numeric"
-                placeholder="0"
-              />
-            </View>
-            <TouchableOpacity onPress={() => removeItem(activeMeal, item.id)} style={styles.removeBtn}>
-              <Text style={styles.removeBtnText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
-
-      {/* Add new item */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Add New Item to {activeMeal}</Text>
-        <View style={styles.addRow}>
-          <TextInput
-            style={[styles.newInput, { width: 44 }]}
-            value={newItem.emoji}
-            onChangeText={(v) => setNewItem((p) => ({ ...p, emoji: v }))}
-            placeholder="🍽️"
-          />
-          <TextInput
-            style={[styles.newInput, { flex: 1 }]}
-            value={newItem.name}
-            onChangeText={(v) => { setAddError(''); setNewItem((p) => ({ ...p, name: v })); }}
-            placeholder="Item name"
-          />
-          <View style={styles.priceInputWrap}>
-            <Text style={styles.rupee}>₹</Text>
-            <TextInput
-              style={styles.priceInput}
-              value={newItem.price}
-              onChangeText={(v) => { setAddError(''); setNewItem((p) => ({ ...p, price: v })); }}
-              keyboardType="numeric"
-              placeholder="0"
-            />
-          </View>
-        </View>
-        <TextInput
-          style={[styles.newInput, { marginTop: 8 }]}
-          value={newItem.description}
-          onChangeText={(v) => setNewItem((p) => ({ ...p, description: v }))}
-          placeholder="Description (optional)"
-        />
-        {addError ? <Text style={styles.addError}>{addError}</Text> : null}
-        <TouchableOpacity style={styles.addBtn} onPress={addItem}>
-          <Text style={styles.addBtnText}>+ Add Item to {activeMeal}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Save */}
-      <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-        {saving
-          ? <ActivityIndicator color="#fff" />
-          : <Text style={styles.saveBtnText}>Save Menu for All Vendors</Text>}
-      </TouchableOpacity>
-    </ScrollView>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AdminScreen({ navigation, route }) {
-  const { employee } = route.params;
+  const employee = EMPLOYEES.find((e) => e.username === route.params?.employeeUsername) || EMPLOYEES[0];
   const [activeTab, setActiveTab] = useState("Day's Menu");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // ── Shared menu state (read-only; MenuEditor owns its own editable copy) ──
   const [initialMenu, setInitialMenu] = useState(null);
 
   // ── Dashboard state ────────────────────────────────────────────────────────
@@ -378,7 +207,7 @@ export default function AdminScreen({ navigation, route }) {
     const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     const MenuPanel = () => (
-      <ScrollView style={styles.previewLeft} contentContainerStyle={{ paddingBottom: isTablet ? 40 : 110 }}>
+      <ScrollView style={styles.previewLeft} contentContainerStyle={{ paddingBottom: isTablet ? 40 : 110 }} showsVerticalScrollIndicator={true}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }} contentContainerStyle={styles.previewTabBar}>
           {ALL_CATEGORIES.map((cat) => {
             const m = CATEGORY_META[cat];
@@ -447,7 +276,7 @@ export default function AdminScreen({ navigation, route }) {
             <Text style={styles.previewEmptyCartText}>No items added yet</Text>
           </View>
         ) : (
-          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
             {cartItems.map((item) => (
               <View key={item.id} style={styles.previewCartRow}>
                 <Text style={styles.previewCartEmoji}>{item.emoji}</Text>
@@ -519,7 +348,7 @@ export default function AdminScreen({ navigation, route }) {
     }
 
     return (
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.dashContent}>
+      <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={styles.dashContent} showsVerticalScrollIndicator={true}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }} contentContainerStyle={styles.summaryRow}>
           {vendorNames.map((vname) => {
             const total = rows.reduce((s, r) => s + (r.vendors[vname] || 0), 0);
@@ -611,7 +440,7 @@ export default function AdminScreen({ navigation, route }) {
     const disabledCount = localDisabled.size;
 
     return (
-      <ScrollView style={[{ flex: 1 }, Platform.OS === 'web' && { height: 0 }]} contentContainerStyle={styles.editorContent}>
+      <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={styles.editorContent} showsVerticalScrollIndicator={true}>
         {/* Cart selector */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }} contentContainerStyle={{ gap: 10, paddingBottom: 16 }}>
           {VENDORS.map((cartId) => {
@@ -695,8 +524,7 @@ export default function AdminScreen({ navigation, route }) {
       <Header />
       <TabBar />
       <View style={{ flex: 1, minHeight: 0 }}>
-        {activeTab === "Day's Menu"      && <DayMenuScreen />}
-        {activeTab === 'Menu Editor'     && <MenuEditor key={refreshKey} initialMenu={initialMenu} onSave={handleSave} />}
+        {activeTab === "Day's Menu"      && <DayMenuScreen key={refreshKey} initialMenu={initialMenu} onSave={handleSave} />}
         {activeTab === 'Staff Preview'   && <StaffPreview key={refreshKey} />}
         {activeTab === 'Cart Stock'      && <CartStockEditor key={refreshKey} />}
         {activeTab === 'Vendor Dashboard'&& <Dashboard />}
@@ -706,7 +534,7 @@ export default function AdminScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: THEME.offWhite },
+  container: { flex: 1, backgroundColor: THEME.offWhite, ...(Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' } : {}) },
 
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -728,50 +556,6 @@ const styles = StyleSheet.create({
   tabTextActive: { color: THEME.gold },
   refreshBtn: { paddingHorizontal: 12, paddingVertical: 13, borderLeftWidth: 1, borderLeftColor: '#e2e8f0', flexShrink: 0 },
   refreshBtnText: { fontSize: 16, fontWeight: '600', color: THEME.navy },
-
-  // ── Menu editor ────────────────────────────────────────────────────────────
-  editorContent: { padding: 16, paddingBottom: 200 },
-  mealTabs: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  mealTab: {
-    flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5,
-    borderColor: THEME.goldBorder, backgroundColor: THEME.white, alignItems: 'center',
-  },
-  mealTabActive: { backgroundColor: THEME.navy, borderColor: '#f97316' },
-  mealTabText: { fontSize: 14, fontWeight: '600', color: THEME.slate },
-  mealTabTextActive: { color: THEME.white },
-
-  card: {
-    backgroundColor: THEME.white, borderRadius: 14, padding: 16, marginBottom: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
-  },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: THEME.slate, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
-
-  editorRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  editorEmoji: { fontSize: 24, width: 34, flexShrink: 0 },
-  nameInput: {
-    flex: 1, minWidth: 80, borderWidth: 1, borderColor: THEME.goldBorder, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: THEME.text, backgroundColor: THEME.offWhite,
-  },
-  priceInputWrap: {
-    flexShrink: 0, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: THEME.goldBorder,
-    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: THEME.offWhite,
-  },
-  rupee: { fontSize: 14, color: THEME.slate, marginRight: 2 },
-  priceInput: { fontSize: 14, color: THEME.text, width: 52 },
-  removeBtn: { padding: 6, flexShrink: 0 },
-  removeBtnText: { fontSize: 16, color: '#ef4444' },
-
-  addRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  newInput: {
-    borderWidth: 1, borderColor: THEME.goldBorder, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, color: THEME.text, backgroundColor: THEME.offWhite,
-  },
-  addError: { color: '#ef4444', fontSize: 13, marginTop: 8 },
-  addBtn: { marginTop: 8, backgroundColor: THEME.navy, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
-  addBtnText: { color: THEME.white, fontWeight: 'bold', fontSize: 14 },
-
-  saveBtn: { backgroundColor: THEME.navy, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { color: THEME.white, fontWeight: 'bold', fontSize: 15 },
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
   dashContent: { padding: 16, paddingBottom: 120 },
@@ -812,7 +596,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 16, color: THEME.slateLight },
 
   // ── Staff preview ──────────────────────────────────────────────────────────
-  previewContainer: { flex: 1, backgroundColor: THEME.offWhite },
+  previewContainer: { flex: 1, minHeight: 0, backgroundColor: THEME.offWhite },
   previewBanner: {
     backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center',
   },
@@ -884,6 +668,11 @@ const styles = StyleSheet.create({
   previewPhoneBarBtn: { backgroundColor: THEME.gold, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
 
   // ── Cart Stock Editor ──────────────────────────────────────────────────────
+  card: {
+    backgroundColor: THEME.white, borderRadius: 14, padding: 16, marginBottom: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  },
+  cardTitle: { fontSize: 14, fontWeight: '700', color: THEME.slate, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
   divider: { height: 1, backgroundColor: THEME.rowBorder, marginLeft: 42 },
   cartChip: {
     paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20,

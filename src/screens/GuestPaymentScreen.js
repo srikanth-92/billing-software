@@ -8,7 +8,7 @@ import {
   fetchRazorpayOrderStatus, createRazorpayQR, fetchQRPayments,
   buildUpiString, formatCurrency,
 } from '../utils/razorpay';
-import { saveOrder, getNextToken } from '../utils/storage';
+import { saveOrder, getNextToken, getExistingOrder } from '../utils/storage';
 import { RESTAURANT_NAME, RESTAURANT_GSTIN } from '../constants';
 import { THEME } from '../constants/theme';
 import QRCodeDisplay from '../components/QRCodeDisplay';
@@ -19,7 +19,7 @@ const POLL_MS = 3000;
 const STATE = { CREATING: 'creating', AWAITING: 'awaiting', CONFIRMED: 'confirmed', ERROR: 'error' };
 
 export default function GuestPaymentScreen({ navigation, route }) {
-  const { orderId, items, subtotal, tax, total } = route.params;
+  const { orderId, items, subtotal, tax, total, cartId = 'cart1', phone = '' } = route.params;
   const { isTablet } = useLayout();
 
   const [state, setState] = useState(STATE.CREATING);
@@ -47,10 +47,19 @@ export default function GuestPaymentScreen({ navigation, route }) {
           setState(STATE.AWAITING);
 
           // Use redirect mode — Razorpay redirects to /guest-confirm after payment
-          // This works for ALL payment methods including cross-device UPI QR
-          const callbackUrl = `${window.location.origin}/guest-confirm?orderId=${orderId}&subtotal=${subtotal}&tax=${tax}&total=${total}&items=${encodeURIComponent(JSON.stringify(items))}`;
+          // This works for ALL payment methods including cross-device UPI QR.
+          // Save order context to sessionStorage so GuestConfirmScreen can recover
+          // it even if React Navigation strips query params from the URL on reload.
+          sessionStorage.setItem('rzp_pending_order', JSON.stringify({
+            orderId, items, subtotal, tax, total, cartId, phone,
+          }));
 
-          openRazorpayCheckout({ razorpayOrderId: rzpOId, amountRupees: total, orderId, callbackUrl })
+          const callbackUrl = `${window.location.origin}/guest-confirm?orderId=${orderId}&subtotal=${subtotal}&tax=${tax}&total=${total}&cartId=${encodeURIComponent(cartId)}&items=${encodeURIComponent(JSON.stringify(items))}${phone ? `&phone=${encodeURIComponent(phone)}` : ''}`;
+
+          openRazorpayCheckout({
+            razorpayOrderId: rzpOId, amountRupees: total, orderId, callbackUrl,
+            prefill: phone ? { contact: phone } : {},
+          })
             .then((payment) => {
               // handler fires for non-redirect payments (card, wallet, netbanking)
               if (!cancelled) handlePaymentSuccess(payment.razorpay_payment_id || payment.id);
@@ -90,15 +99,22 @@ export default function GuestPaymentScreen({ navigation, route }) {
         const payment = await fetchQRPayments(qrId);
         if (payment) {
           clearInterval(pollRef.current);
-          const token = await getNextToken();
-          setTokenNumber(token);
           setState(STATE.CONFIRMED);
+          // Idempotency — check if already saved
+          const existing = await getExistingOrder(orderId);
+          if (existing) {
+            setTokenNumber(existing.tokenNumber);
+            return;
+          }
+          const token = await getNextToken(cartId);
+          setTokenNumber(token);
           await saveOrder({
             orderId, items, subtotal, tax, total,
             employeeName: 'Guest (Self-Order)',
             paymentId: payment.id,
             paymentMethod: payment.method || 'upi',
             isGuestOrder: true,
+            cartId,
             tokenNumber: token,
             printPending: true,
           });
@@ -113,7 +129,13 @@ export default function GuestPaymentScreen({ navigation, route }) {
   async function handlePaymentSuccess(paymentId = 'manual') {
     setState(STATE.CONFIRMED);
     try {
-      const token = await getNextToken();
+      // Idempotency — if already saved reuse existing token
+      const existing = await getExistingOrder(orderId);
+      if (existing) {
+        setTokenNumber(existing.tokenNumber);
+        return;
+      }
+      const token = await getNextToken(cartId);
       setTokenNumber(token);
       await saveOrder({
         orderId, items, subtotal, tax, total,
@@ -121,6 +143,7 @@ export default function GuestPaymentScreen({ navigation, route }) {
         paymentId,
         paymentMethod: 'razorpay_checkout',
         isGuestOrder: true,
+        cartId,
         tokenNumber: token,
         printPending: true,
       });
@@ -219,7 +242,7 @@ export default function GuestPaymentScreen({ navigation, route }) {
           </ScrollView>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
           <OrderSummary items={items} subtotal={subtotal} tax={tax} total={total} orderId={orderId} />
           <Panel />
         </ScrollView>
@@ -229,7 +252,7 @@ export default function GuestPaymentScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: THEME.offWhite },
+  container: { flex: 1, backgroundColor: THEME.offWhite, ...(Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' } : {}) },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 14,
@@ -238,7 +261,7 @@ const styles = StyleSheet.create({
   backBtn: { paddingVertical: 4, paddingRight: 8 },
   backText: { color: THEME.gold, fontSize: 15, fontWeight: '600' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.gold },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: 16, paddingBottom: 120 },
   tabletBody: { flex: 1, flexDirection: 'row' },
   tabletLeft: { flex: 1, borderRightWidth: 1, borderRightColor: THEME.goldBorder },
   tabletRight: { flex: 1 },
