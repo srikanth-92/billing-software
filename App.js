@@ -18,6 +18,7 @@ import GuestConfirmScreen from './src/screens/GuestConfirmScreen';
 import GuestQRScreen from './src/screens/GuestQRScreen';
 import AllQRScreen from './src/screens/AllQRScreen';
 import CateringOrderScreen from './src/screens/CateringOrderScreen';
+import CateringBillScreen from './src/screens/CateringBillScreen';
 
 const Stack = createStackNavigator();
 export const navigationRef = createNavigationContainerRef();
@@ -84,6 +85,7 @@ export default function App() {
         <Stack.Screen name="GuestQR" component={GuestQRScreen} />
         <Stack.Screen name="AllQR" component={AllQRScreen} />
         <Stack.Screen name="CateringOrder" component={CateringOrderScreen} />
+        <Stack.Screen name="CateringBill" component={CateringBillScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

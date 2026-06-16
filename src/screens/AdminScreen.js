@@ -155,6 +155,9 @@ export default function AdminScreen({ navigation, route }) {
         <Text style={styles.headerSub}>Admin · {employee.name}</Text>
       </View>
       <View style={styles.headerRight}>
+        <TouchableOpacity onPress={() => navigation.navigate('CateringBill')} style={styles.allQrBtn}>
+          <Text style={styles.allQrBtnText}>Catering Bill</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('AllQR')} style={styles.allQrBtn}>
           <Text style={styles.allQrBtnText}>All QRs</Text>
         </TouchableOpacity>
