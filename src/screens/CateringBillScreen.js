@@ -251,6 +251,20 @@ function downloadPdf() {
 
 const EMPTY_EXTRA = () => ({ name: '', qty: '', rate: '' });
 
+function Field({ label, required, error, children }) {
+  return (
+    <View style={styles.fieldWrap}>
+      <Text style={styles.fieldLabel}>{label}{required ? <Text style={styles.req}> *</Text> : null}</Text>
+      {children}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function inputStyle(errors, key) {
+  return [styles.input, errors[key] && styles.inputError];
+}
+
 export default function CateringBillScreen({ navigation }) {
   const [refNo] = useState(nextRef);
 
@@ -332,16 +346,6 @@ export default function CateringBillScreen({ navigation }) {
     }
   }
 
-  const Field = ({ label, required, error, children }) => (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>{label}{required ? <Text style={styles.req}> *</Text> : null}</Text>
-      {children}
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
-  );
-
-  const inputStyle = (key) => [styles.input, errors[key] && styles.inputError];
-
   const guests = parseInt(guestCount, 10) || 0;
   const ppp = parseFloat(pricePerPlate) || 0;
   const extras = extraItems.filter((e) => e.name.trim() && e.qty && e.rate);
@@ -367,15 +371,15 @@ export default function CateringBillScreen({ navigation }) {
           <Text style={styles.sectionTitle}>📋 Client & Event Details</Text>
 
           <Field label="Client Name" required error={errors.clientName}>
-            <TextInput style={inputStyle('clientName')} value={clientName} onChangeText={setClientName} placeholder="Full name" placeholderTextColor={THEME.slateLight} />
+            <TextInput style={inputStyle(errors, 'clientName')} value={clientName} onChangeText={setClientName} placeholder="Full name" placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Field label="Client Phone" required error={errors.clientPhone}>
-            <TextInput style={inputStyle('clientPhone')} value={clientPhone} onChangeText={(v) => setClientPhone(v.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" keyboardType="phone-pad" placeholderTextColor={THEME.slateLight} />
+            <TextInput style={inputStyle(errors, 'clientPhone')} value={clientPhone} onChangeText={(v) => setClientPhone(v.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" keyboardType="phone-pad" placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Field label="Event Type" required error={errors.eventType}>
-            <TextInput style={inputStyle('eventType')} value={eventType} onChangeText={setEventType} placeholder="e.g. Wedding, Birthday, Corporate…" placeholderTextColor={THEME.slateLight} />
+            <TextInput style={inputStyle(errors, 'eventType')} value={eventType} onChangeText={setEventType} placeholder="e.g. Wedding, Birthday, Corporate…" placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Field label="Date & Time of Event" required error={errors.eventDate}>
@@ -387,16 +391,16 @@ export default function CateringBillScreen({ navigation }) {
                 style={{ width: '100%', padding: '12px 14px', fontSize: 15, border: errors.eventDate ? '1.5px solid #ef4444' : '1.5px solid #e8d78a', borderRadius: 10, backgroundColor: '#f8fafc', color: '#1e293b', boxSizing: 'border-box', fontFamily: 'inherit' }}
               />
             ) : (
-              <TextInput style={inputStyle('eventDate')} value={eventDate} onChangeText={setEventDate} placeholder="YYYY-MM-DD HH:MM" placeholderTextColor={THEME.slateLight} />
+              <TextInput style={inputStyle(errors, 'eventDate')} value={eventDate} onChangeText={setEventDate} placeholder="YYYY-MM-DD HH:MM" placeholderTextColor={THEME.slateLight} />
             )}
           </Field>
 
           <Field label="Number of Guests (min 25)" required error={errors.guestCount}>
-            <TextInput style={inputStyle('guestCount')} value={guestCount} onChangeText={(v) => setGuestCount(v.replace(/\D/g, ''))} placeholder="e.g. 50" keyboardType="number-pad" placeholderTextColor={THEME.slateLight} />
+            <TextInput style={inputStyle(errors, 'guestCount')} value={guestCount} onChangeText={(v) => setGuestCount(v.replace(/\D/g, ''))} placeholder="e.g. 50" keyboardType="number-pad" placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Field label="Venue Address" required error={errors.venueAddress}>
-            <TextInput style={[inputStyle('venueAddress'), { minHeight: 72, textAlignVertical: 'top' }]} value={venueAddress} onChangeText={setVenueAddress} placeholder="Full venue address" multiline placeholderTextColor={THEME.slateLight} />
+            <TextInput style={[inputStyle(errors, 'venueAddress'), { minHeight: 72, textAlignVertical: 'top' }]} value={venueAddress} onChangeText={setVenueAddress} placeholder="Full venue address" multiline placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Field label="Point of Contact at Venue" error={errors.venueContact}>
@@ -411,15 +415,15 @@ export default function CateringBillScreen({ navigation }) {
           <Text style={styles.sectionTitle}>⏰ Service Timeline</Text>
 
           <Field label="Setup Team Arrival" required error={errors.setupTime}>
-            <TextInput style={inputStyle('setupTime')} value={setupTime} onChangeText={setSetupTime} placeholder="e.g. 11:00 AM" placeholderTextColor={THEME.slateLight} />
+            <TextInput style={inputStyle(errors, 'setupTime')} value={setupTime} onChangeText={setSetupTime} placeholder="e.g. 11:00 AM" placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Field label="Service Start Time" required error={errors.serviceStart}>
-            <TextInput style={inputStyle('serviceStart')} value={serviceStart} onChangeText={setServiceStart} placeholder="e.g. 1:00 PM" placeholderTextColor={THEME.slateLight} />
+            <TextInput style={inputStyle(errors, 'serviceStart')} value={serviceStart} onChangeText={setServiceStart} placeholder="e.g. 1:00 PM" placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Field label="Service End Time" required error={errors.serviceEnd}>
-            <TextInput style={inputStyle('serviceEnd')} value={serviceEnd} onChangeText={setServiceEnd} placeholder="e.g. 4:00 PM" placeholderTextColor={THEME.slateLight} />
+            <TextInput style={inputStyle(errors, 'serviceEnd')} value={serviceEnd} onChangeText={setServiceEnd} placeholder="e.g. 4:00 PM" placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Field label="Style of Service">
@@ -454,7 +458,7 @@ export default function CateringBillScreen({ navigation }) {
           <Text style={styles.sectionTitle}>💰 Pricing</Text>
 
           <Field label="Price per Plate (₹)" required error={errors.pricePerPlate}>
-            <TextInput style={inputStyle('pricePerPlate')} value={pricePerPlate} onChangeText={setPricePerPlate} placeholder="e.g. 450" keyboardType="decimal-pad" placeholderTextColor={THEME.slateLight} />
+            <TextInput style={inputStyle(errors, 'pricePerPlate')} value={pricePerPlate} onChangeText={setPricePerPlate} placeholder="e.g. 450" keyboardType="decimal-pad" placeholderTextColor={THEME.slateLight} />
           </Field>
 
           <Text style={styles.subSectionLabel}>Extra / Add-on Items</Text>
