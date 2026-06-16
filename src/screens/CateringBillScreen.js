@@ -36,6 +36,7 @@ function generateHtml({
   guestCount, venueAddress, venueContact, venueContactPhone,
   setupTime, serviceStart, serviceEnd, serviceStyle,
   menu, pricePerPlate, extraItems, specialRequests,
+  transportationNote, advancePaid, balanceAmt,
 }) {
   const guests = parseInt(guestCount, 10) || 0;
   const ppp = parseFloat(pricePerPlate) || 0;
@@ -50,8 +51,8 @@ function generateHtml({
   const cgst = Math.round(taxableAmount * 0.025 * 100) / 100;
   const sgst = Math.round(taxableAmount * 0.025 * 100) / 100;
   const total = Math.round((taxableAmount + cgst + sgst) * 100) / 100;
-  const advance = Math.round(total * 0.20);
-  const balance = total - advance;
+  const advanceDisplay = advancePaid.trim() || String(Math.round(total * 0.20));
+  const balanceDisplay = balanceAmt.trim() || String(Math.round(total * 0.80));
 
   const menuRows = MENU_SECTIONS
     .filter((s) => menu[s.key] && menu[s.key].trim())
@@ -164,6 +165,14 @@ function generateHtml({
       <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right">₹${foodSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
     </tr>
     ${extraRows}
+    <tr>
+      <td style="padding:7px 10px;border:1px solid #e8d78a;color:#64748b">Paneer / Mushroom (if applicable)</td>
+      <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;color:#64748b">₹30 extra per person</td>
+    </tr>
+    <tr>
+      <td style="padding:7px 10px;border:1px solid #e8d78a;color:#64748b">Transportation &amp; Porter Charges</td>
+      <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;color:#64748b">${transportationNote.trim() || 'As per actuals'}</td>
+    </tr>
     ${extras.length || extrasTotal ? `
     <tr>
       <td style="padding:7px 10px;border:1px solid #e8d78a;font-weight:600;color:#334155">Taxable Amount</td>
@@ -182,26 +191,28 @@ function generateHtml({
       <td style="padding:7px 10px;border:1px solid #c9a840;text-align:right">₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
     </tr>
     <tr>
-      <td style="padding:7px 10px;border:1px solid #e8d78a;color:#16a34a">Advance Required (20%)</td>
-      <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;color:#16a34a">₹${advance.toLocaleString('en-IN')}</td>
+      <td style="padding:7px 10px;border:1px solid #e8d78a;color:#16a34a">Advance Paid</td>
+      <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;color:#16a34a">₹${parseFloat(advanceDisplay).toLocaleString('en-IN')}</td>
     </tr>
     <tr class="balance-row">
       <td style="padding:7px 10px;border:1px solid #c9a840">Balance — After Event Completion</td>
-      <td style="padding:7px 10px;border:1px solid #c9a840;text-align:right">₹${balance.toLocaleString('en-IN')}</td>
+      <td style="padding:7px 10px;border:1px solid #c9a840;text-align:right">₹${parseFloat(balanceDisplay).toLocaleString('en-IN')}</td>
     </tr>
   </table>
   <p style="font-size:13px;color:#0f2340;margin-top:8px">
-    <strong>Payment Terms:</strong> Balance of ₹${balance.toLocaleString('en-IN')} to be cleared on or before event day via Bank Transfer / UPI / Cash.
+    <strong>Payment Terms:</strong> Balance of ₹${parseFloat(balanceDisplay).toLocaleString('en-IN')} to be cleared on or before event day via Bank Transfer / UPI / Cash.<br/>
+    <strong>Transportation &amp; Porter:</strong> Booked as per actuals — charges billed separately after event completion.
   </p>
 
   <div class="section-title">📋 Terms &amp; Conditions</div>
   <div class="terms">
     • <strong>Guest Count:</strong> Final billing based on guaranteed minimum or actual plate count, whichever is higher.<br/>
     • <strong>Extra Plates:</strong> Any plates beyond guaranteed count charged at ₹${ppp.toFixed(2)} + GST per plate.<br/>
-    • <strong>Paneer / Mushroom:</strong> Charged at ₹30 extra per person if applicable.<br/>
+    • <strong>Paneer / Mushroom:</strong> Extra items — will be charged at ₹30 per person if applicable (billed separately).<br/>
     • <strong>Food Safety:</strong> Leftover food will not be packed or taken outside unless agreed in writing.<br/>
     • <strong>Power &amp; Water:</strong> Client / venue must provide running water and adequate power supply.<br/>
-    • <strong>Buffet Setup:</strong> Transportation and buffet tables to be arranged by the client / venue.<br/>
+    • <strong>Transportation &amp; Porter:</strong> Booked by Buffet on Wheels as per actuals; charges billed separately after event completion.<br/>
+    • <strong>Buffet Setup:</strong> Buffet tables to be arranged by the client / venue.<br/>
     • <strong>Decoration:</strong> Not included in the package.<br/>
     • <strong>Advance:</strong> 20% advance required; balance on or before event day.<br/>
     • <strong>Payment:</strong> UPI &amp; cash accepted — no discount, no extra charge.
@@ -287,8 +298,11 @@ export default function CateringBillScreen({ navigation }) {
   const [specialRequests, setSpecialRequests] = useState('');
 
   // Pricing
-  const [pricePerPlate, setPricePerPlate] = useState('');
-  const [extraItems, setExtraItems] = useState([EMPTY_EXTRA()]);
+  const [pricePerPlate, setPricePerPlate]       = useState('');
+  const [extraItems, setExtraItems]             = useState([EMPTY_EXTRA()]);
+  const [transportationNote, setTransportation] = useState('');
+  const [advancePaid, setAdvancePaid]           = useState('');
+  const [balanceAmt, setBalanceAmt]             = useState('');
 
   const [errors, setErrors] = useState({});
 
@@ -337,6 +351,7 @@ export default function CateringBillScreen({ navigation }) {
       guestCount, venueAddress, venueContact, venueContactPhone,
       setupTime, serviceStart, serviceEnd, serviceStyle,
       menu, pricePerPlate, extraItems, specialRequests,
+      transportationNote, advancePaid, balanceAmt,
     });
 
     if (Platform.OS === 'web') {
@@ -478,15 +493,55 @@ export default function CateringBillScreen({ navigation }) {
             <Text style={styles.addExtraText}>+ Add Item</Text>
           </TouchableOpacity>
 
+          <Field label="Transportation & Porter Charges">
+            <TextInput
+              style={styles.input}
+              value={transportationNote}
+              onChangeText={setTransportation}
+              placeholder="As per actuals (leave blank for default text)"
+              placeholderTextColor={THEME.slateLight}
+            />
+          </Field>
+
+          <View style={styles.twoCol}>
+            <View style={{ flex: 1 }}>
+              <Field label="Advance Paid (₹)">
+                <TextInput
+                  style={styles.input}
+                  value={advancePaid}
+                  onChangeText={setAdvancePaid}
+                  placeholder={guests > 0 && ppp > 0 ? String(advance) : '0'}
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={THEME.slateLight}
+                />
+              </Field>
+            </View>
+            <View style={{ width: 10 }} />
+            <View style={{ flex: 1 }}>
+              <Field label="Balance Amount (₹)">
+                <TextInput
+                  style={styles.input}
+                  value={balanceAmt}
+                  onChangeText={setBalanceAmt}
+                  placeholder={guests > 0 && ppp > 0 ? String(total - advance) : '0'}
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={THEME.slateLight}
+                />
+              </Field>
+            </View>
+          </View>
+
           {/* ── Live estimate ──────────────────────────────────── */}
           {guests > 0 && ppp > 0 && (
             <View style={styles.estimateCard}>
               <Text style={styles.estimateTitle}>Estimate Preview</Text>
               <View style={styles.estimateRow}><Text style={styles.estimateLabel}>₹{ppp.toFixed(2)} × {guests} pax</Text><Text style={styles.estimateVal}>₹{(guests * ppp).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</Text></View>
               {extrasTotal > 0 && <View style={styles.estimateRow}><Text style={styles.estimateLabel}>Extras</Text><Text style={styles.estimateVal}>₹{extrasTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</Text></View>}
+              <View style={styles.estimateRow}><Text style={styles.estimateLabel}>Transportation</Text><Text style={styles.estimateVal}>As per actuals</Text></View>
               <View style={styles.estimateRow}><Text style={styles.estimateLabel}>GST (5%)</Text><Text style={styles.estimateVal}>₹{Math.round(taxable * 0.05 * 100 / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</Text></View>
               <View style={[styles.estimateRow, styles.estimateTotalRow]}><Text style={styles.estimateTotalLabel}>Total</Text><Text style={styles.estimateTotalVal}>₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</Text></View>
-              <View style={styles.estimateRow}><Text style={[styles.estimateLabel, { color: '#16a34a' }]}>Advance (20%)</Text><Text style={[styles.estimateVal, { color: '#16a34a', fontWeight: '700' }]}>₹{advance.toLocaleString('en-IN')}</Text></View>
+              <View style={styles.estimateRow}><Text style={[styles.estimateLabel, { color: '#16a34a' }]}>Advance Paid</Text><Text style={[styles.estimateVal, { color: '#16a34a', fontWeight: '700' }]}>₹{(parseFloat(advancePaid) || advance).toLocaleString('en-IN')}</Text></View>
+              <View style={styles.estimateRow}><Text style={[styles.estimateLabel, { color: '#c9a840' }]}>Balance</Text><Text style={[styles.estimateVal, { color: '#c9a840', fontWeight: '700' }]}>₹{(parseFloat(balanceAmt) || (total - advance)).toLocaleString('en-IN')}</Text></View>
             </View>
           )}
 
@@ -571,6 +626,8 @@ const styles = StyleSheet.create({
   estimateTotalRow: { borderTopWidth: 1, borderTopColor: THEME.goldBorder, marginTop: 6, paddingTop: 8 },
   estimateTotalLabel: { fontSize: 15, fontWeight: 'bold', color: THEME.navy },
   estimateTotalVal: { fontSize: 15, fontWeight: 'bold', color: THEME.gold },
+
+  twoCol: { flexDirection: 'row', alignItems: 'flex-start' },
 
   generateBtn: {
     backgroundColor: THEME.navy, borderRadius: 12,
