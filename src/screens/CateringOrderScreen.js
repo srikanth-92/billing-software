@@ -217,8 +217,7 @@ const MENU_SECTIONS = [
     title: 'Ice Cream',
     emoji: '🍦',
     items: [
-      'Vanilla', 'Chocolate', 'Strawberry',
-      'Mango', 'Butterscotch', 'Kesar Pista', 'Black Currant',
+      'Vanilla', 'Strawberry', 'Butterscotch',
     ],
   },
   {

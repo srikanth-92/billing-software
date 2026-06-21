@@ -26,7 +26,7 @@ const MENU_OPTIONS = {
   breads:        { label: 'Breads',          emoji: '🫓', items: ['Phulka', 'Puri', 'Naan', 'Butter Naan', 'Paratha', 'Roomali Roti', 'Bhatura', 'Missi Roti'] },
   salad:         { label: 'Salad / Raita',   emoji: '🥗', items: ['Boondi Raita', 'Green Salad', 'Fruit Salad', 'Onion Raita', 'Veg Raita', 'Kachumber Salad', 'Pineapple Raita'] },
   sweets:        { label: 'Sweets / Dessert',emoji: '🍮', items: ['Kheer', 'Gulab Jamun', 'Halwa', 'Jalebi', 'Rasgulla', 'Modak', 'Gajar Halwa', 'Phirni', 'Rabri', 'Moong Dal Halwa'] },
-  iceCream:      { label: 'Ice Cream',       emoji: '🍦', items: ['Kesar Pista', 'Vanilla', 'Chocolate', 'Strawberry', 'Mango', 'Butterscotch', 'Mix (Assorted)', 'Kulfi'] },
+  iceCream:      { label: 'Ice Cream',       emoji: '🍦', items: ['Vanilla', 'Strawberry', 'Butterscotch', 'Mix (Assorted)', 'Kulfi'] },
   accompaniments:{ label: 'Accompaniments',  emoji: '🫙', items: ['Pappad, Pickle, Plain Curd, Green Chutney, Tamarind Chutney', 'Pappad', 'Pickle', 'Plain Curd', 'Green Chutney', 'Tamarind Chutney', 'Papad Masala', 'Onion Salad', 'Lemon Wedge'] },
 };
 const MENU_KEYS = Object.keys(MENU_OPTIONS);
