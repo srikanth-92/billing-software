@@ -14,29 +14,30 @@ function nextRef() { return String(++_refCounter).padStart(4, '0'); }
 
 const SERVICE_STYLES = ['Buffet', 'Sit-down', 'Live Counters', 'High Tea'];
 
-const MENU_SECTIONS = [
-  { key: 'welcomeDrink',  label: 'Welcome Drink',   emoji: '🥤' },
-  { key: 'soup',          label: 'Soup',             emoji: '🍜' },
-  { key: 'starter',       label: 'Starter',          emoji: '🥙' },
-  { key: 'paneerGravy',   label: 'Paneer Gravy',     emoji: '🧀' },
-  { key: 'drySabzi',      label: 'Dry Sabzi',        emoji: '🥬' },
-  { key: 'dal',           label: 'Dal',              emoji: '🫕' },
-  { key: 'continental',   label: 'Continental',      emoji: '🥪' },
-  { key: 'chinese',       label: 'Chinese',          emoji: '🥡' },
-  { key: 'rice',          label: 'Rice / Biryani',   emoji: '🍚' },
-  { key: 'breads',        label: 'Breads',           emoji: '🫓' },
-  { key: 'salad',         label: 'Salad / Raita',    emoji: '🥗' },
-  { key: 'sweets',        label: 'Sweets / Dessert', emoji: '🍮' },
-  { key: 'iceCream',      label: 'Ice Cream',        emoji: '🍦' },
-  { key: 'accompaniments',label: 'Accompaniments',   emoji: '🫙' },
-];
+const MENU_OPTIONS = {
+  welcomeDrink:  { label: 'Welcome Drink',   emoji: '🥤', items: ['Virgin Mojito', 'Lemonade', 'Buttermilk', 'Jaljeera', 'Rose Sharbat', 'Mango Lassi', 'Coconut Water', 'Aam Panna', 'Cold Coffee'] },
+  soup:          { label: 'Soup',            emoji: '🍜', items: ['Tomato Soup', 'Sweet Corn Soup', 'Manchow Soup', 'Hot & Sour Soup', 'Lemon Coriander Soup', 'Cream of Mushroom'] },
+  starter:       { label: 'Starter',         emoji: '🥙', items: ['Hara Bhara Kabab', 'Aloo Tikki', 'Paneer Tikka', 'Veg Seekh Kabab', 'Samosa', 'Spring Roll', 'Stuffed Mushroom', 'Corn Cheese Ball', 'Dahi Kabab', 'Veg Cutlet'] },
+  mainCourse:    { label: 'Main Course',      emoji: '🍛', items: ['Kadhai Paneer', 'Paneer Butter Masala', 'Shahi Paneer', 'Matar Paneer', 'Paneer Lababdar', 'Palak Paneer', 'Paneer Do Pyaza', 'Paneer Tikka Masala', 'Mix Veg', 'Aloo Gobi', 'Aloo Jeera', 'Bhindi Masala', 'Jeera Aloo', 'Gobhi Manchurian', 'Baby Corn Masala', 'Mushroom Masala', 'Capsicum Sabzi'] },
+  dal:           { label: 'Dal',             emoji: '🫕', items: ['Dal Tadka', 'Dal Makhani', 'Dal Fry', 'Chana Masala', 'Rajma', 'Panchratna Dal', 'Yellow Dal'] },
+  continental:   { label: 'Continental',     emoji: '🥪', items: ['Pasta Arrabiata', 'White Sauce Pasta', 'Pesto Pasta', 'Garlic Bread', 'Veg Au Gratin', 'Stuffed Capsicum'] },
+  chinese:       { label: 'Chinese',         emoji: '🥡', items: ['Veg Fried Rice', 'Hakka Noodles', 'Veg Manchurian', 'Chilli Paneer', 'American Chopsuey', 'Veg Chow Mein', 'Kung Pao Veg'] },
+  rice:          { label: 'Rice / Biryani',  emoji: '🍚', items: ['White Rice', 'Steamed Rice', 'Veg Biryani', 'Veg Pulao', 'Jeera Rice', 'Curd Rice', 'Peas Pulao', 'Saffron Rice'] },
+  breads:        { label: 'Breads',          emoji: '🫓', items: ['Phulka', 'Puri', 'Naan', 'Butter Naan', 'Paratha', 'Roomali Roti', 'Bhatura', 'Missi Roti'] },
+  salad:         { label: 'Salad / Raita',   emoji: '🥗', items: ['Boondi Raita', 'Green Salad', 'Fruit Salad', 'Onion Raita', 'Veg Raita', 'Kachumber Salad', 'Pineapple Raita'] },
+  sweets:        { label: 'Sweets / Dessert',emoji: '🍮', items: ['Kheer', 'Gulab Jamun', 'Halwa', 'Jalebi', 'Rasgulla', 'Modak', 'Gajar Halwa', 'Phirni', 'Rabri', 'Moong Dal Halwa'] },
+  iceCream:      { label: 'Ice Cream',       emoji: '🍦', items: ['Kesar Pista', 'Vanilla', 'Chocolate', 'Strawberry', 'Mango', 'Butterscotch', 'Mix (Assorted)', 'Kulfi'] },
+  accompaniments:{ label: 'Accompaniments',  emoji: '🫙', items: ['Pappad, Pickle, Plain Curd, Green Chutney, Tamarind Chutney', 'Pappad', 'Pickle', 'Plain Curd', 'Green Chutney', 'Tamarind Chutney', 'Papad Masala', 'Onion Salad', 'Lemon Wedge'] },
+};
+const MENU_KEYS = Object.keys(MENU_OPTIONS);
 
 function generateHtml({
   refNo, clientName, clientPhone, eventType, eventDate,
   guestCount, venueAddress, venueContact, venueContactPhone,
   setupTime, serviceStart, serviceEnd, serviceStyle,
   menu, pricePerPlate, extraItems, specialRequests,
-  transportationNote, advancePaid, balanceAmt,
+  transportationNote, advancePaid,
+  plates, iceCreamBowls, sabziBowls,
 }) {
   const guests = parseInt(guestCount, 10) || 0;
   const ppp = parseFloat(pricePerPlate) || 0;
@@ -52,16 +53,25 @@ function generateHtml({
   const sgst = Math.round(taxableAmount * 0.025 * 100) / 100;
   const total = Math.round((taxableAmount + cgst + sgst) * 100) / 100;
   const advanceDisplay = advancePaid.trim() || String(Math.round(total * 0.20));
-  const balanceDisplay = balanceAmt.trim() || String(Math.round(total * 0.80));
+  const balanceDisplay = String(Math.round((total - parseFloat(advanceDisplay)) * 100) / 100);
 
-  const menuRows = MENU_SECTIONS
-    .filter((s) => menu[s.key] && menu[s.key].trim())
-    .map((s) => `
+  // Group menu items by category, number duplicates
+  const catCounts = {};
+  const catSeq = {};
+  menu.forEach((m) => { catCounts[m.category] = (catCounts[m.category] || 0) + 1; });
+  const menuRows = menu
+    .filter((m) => (m.item && m.item !== '__custom__') || m.customItem)
+    .map((m) => {
+      const opt = MENU_OPTIONS[m.category];
+      catSeq[m.category] = (catSeq[m.category] || 0) + 1;
+      const labelSuffix = catCounts[m.category] > 1 ? ` ${catSeq[m.category]}` : '';
+      const displayItem = m.item === '__custom__' ? (m.customItem || '') : m.item;
+      return `
       <tr>
-        <td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340;width:35%">${s.label}</td>
-        <td style="padding:6px 10px;border:1px solid #e8d78a;color:#334155">${menu[s.key]}</td>
-      </tr>`)
-    .join('');
+        <td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340;width:35%">${opt ? opt.emoji + ' ' + opt.label + labelSuffix : m.category}</td>
+        <td style="padding:6px 10px;border:1px solid #e8d78a;color:#334155">${displayItem}</td>
+      </tr>`;
+    }).join('');
 
   const extraRows = extras.map((e) => `
     <tr>
@@ -97,18 +107,20 @@ function generateHtml({
   .sign-block { margin-top:32px; border-top:1px solid #e2e8f0; padding-top:20px; display:flex; justify-content:space-between; }
   .sign-col { width:45%; font-size:12px; color:#64748b; }
   .sign-line { border-bottom:1px solid #94a3b8; margin:20px 0 6px; }
-  .btn-row { display:flex; gap:12px; margin:20px 0 10px; }
+  .btn-row { display:flex; gap:12px; margin:20px 0 10px; flex-wrap:wrap; }
   .btn { padding:10px 24px; border:none; border-radius:8px; font-size:14px; font-weight:bold; cursor:pointer; }
-  .btn-print { background:#0f2340; color:#c9a840; }
-  .btn-pdf   { background:#c9a840; color:#0f2340; }
+  .btn-print   { background:#0f2340; color:#c9a840; }
+  .btn-customer{ background:#c9a840; color:#0f2340; }
+  .btn-kitchen { background:#166534; color:#fff; }
   @media print { .btn-row { display:none; } body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
 </style>
 </head>
 <body>
 <div class="page">
   <div class="btn-row">
-    <button class="btn btn-print" onclick="window.print()">🖨️ Print</button>
-    <button class="btn btn-pdf"   onclick="downloadPdf()">⬇️ Download PDF</button>
+    <button class="btn btn-print"    onclick="window.print()">🖨️ Print</button>
+    <button class="btn btn-customer" onclick="downloadCustomer()">⬇️ Customer Copy</button>
+    <button class="btn btn-kitchen"  onclick="downloadKitchen()">👨‍🍳 Kitchen Copy</button>
   </div>
 
   <div class="letterhead">
@@ -118,8 +130,7 @@ function generateHtml({
       <div class="lh-sub" style="margin-top:4px">${CATERING_ADDRESS}</div>
     </div>
     <div class="lh-contact">
-      📞 ${CATERING_PHONE}<br/>
-      ${RESTAURANT_GSTIN ? 'GSTIN: ' + RESTAURANT_GSTIN : ''}
+      📞 ${CATERING_PHONE}
     </div>
   </div>
 
@@ -149,7 +160,7 @@ function generateHtml({
     <tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Style of Service</td><td style="padding:6px 10px;border:1px solid #e8d78a">${serviceStyle}</td></tr>
   </table>
 
-  ${menuRows ? `
+  ${(menu.length || specialRequests) ? `
   <div class="section-title">🍽️ Confirmed Menu</div>
   <table>
     <tr><th>Category</th><th>Items</th></tr>
@@ -157,6 +168,7 @@ function generateHtml({
     ${specialRequests ? `<tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#7c3aed">Special Requests</td><td style="padding:6px 10px;border:1px solid #e8d78a;color:#334155">${specialRequests}</td></tr>` : ''}
   </table>` : ''}
 
+  <div class="customer-only">
   <div class="section-title">💰 Financial Summary</div>
   <table>
     <tr><th>Particulars</th><th style="text-align:right">Amount (INR)</th></tr>
@@ -165,6 +177,10 @@ function generateHtml({
       <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right">₹${foodSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
     </tr>
     ${extraRows}
+    ${(plates || iceCreamBowls || sabziBowls) ? `<tr>
+      <td style="padding:7px 10px;border:1px solid #e8d78a;color:#64748b">Consumables &amp; Crockery</td>
+      <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;color:#64748b">${[plates ? `Plates: ${plates}` : '', iceCreamBowls ? `Ice Cream Bowls: ${iceCreamBowls}` : '', sabziBowls ? `Sabzi Bowls: ${sabziBowls}` : ''].filter(Boolean).join(' &nbsp;|&nbsp; ')}</td>
+    </tr>` : ''}
     <tr>
       <td style="padding:7px 10px;border:1px solid #e8d78a;color:#64748b">Paneer / Mushroom (if applicable)</td>
       <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;color:#64748b">₹30 extra per person</td>
@@ -173,11 +189,10 @@ function generateHtml({
       <td style="padding:7px 10px;border:1px solid #e8d78a;color:#64748b">Transportation &amp; Porter Charges</td>
       <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;color:#64748b">${transportationNote.trim() || 'As per actuals'}</td>
     </tr>
-    ${extras.length || extrasTotal ? `
     <tr>
       <td style="padding:7px 10px;border:1px solid #e8d78a;font-weight:600;color:#334155">Taxable Amount</td>
       <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;font-weight:600">₹${taxableAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-    </tr>` : ''}
+    </tr>
     <tr>
       <td style="padding:7px 10px;border:1px solid #e8d78a;color:#64748b">CGST (@2.5%)</td>
       <td style="padding:7px 10px;border:1px solid #e8d78a;text-align:right;color:#64748b">₹${cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -214,7 +229,6 @@ function generateHtml({
     • <strong>Transportation &amp; Porter:</strong> Booked by Buffet on Wheels as per actuals; charges billed separately after event completion.<br/>
     • <strong>Buffet Setup:</strong> Buffet tables to be arranged by the client / venue.<br/>
     • <strong>Decoration:</strong> Not included in the package.<br/>
-    • <strong>Advance:</strong> 20% advance required; balance on or before event day.<br/>
     • <strong>Payment:</strong> UPI &amp; cash accepted — no discount, no extra charge.
   </div>
 
@@ -238,22 +252,62 @@ function generateHtml({
       Signature: _______________________<br/>Date: _______________
     </div>
   </div>
+  </div><!-- /customer-only -->
+
+  <div class="kitchen-only" style="display:none">
+  <div class="section-title">👨‍🍳 Kitchen Order Sheet</div>
+  <table>
+    <tr><td style="padding:6px 10px;border:1px solid #e8d78a;width:40%;font-weight:600;color:#0f2340">Order Ref</td><td style="padding:6px 10px;border:1px solid #e8d78a">#${refNo}</td></tr>
+    <tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Event Date</td><td style="padding:6px 10px;border:1px solid #e8d78a">${eventDate}</td></tr>
+    <tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Guest Count</td><td style="padding:6px 10px;border:1px solid #e8d78a">${guestCount} pax</td></tr>
+    <tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Venue</td><td style="padding:6px 10px;border:1px solid #e8d78a">${venueAddress}</td></tr>
+    <tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Setup Arrival</td><td style="padding:6px 10px;border:1px solid #e8d78a">${setupTime}</td></tr>
+    <tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Service</td><td style="padding:6px 10px;border:1px solid #e8d78a">${serviceStart} – ${serviceEnd} (${serviceStyle})</td></tr>
+  </table>
+  ${(menu.length || specialRequests) ? `
+  <div class="section-title">🍽️ Menu to Prepare</div>
+  <table>
+    <tr><th>Category</th><th>Items</th></tr>
+    ${menuRows}
+    ${specialRequests ? `<tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#7c3aed">Special Instructions</td><td style="padding:6px 10px;border:1px solid #e8d78a;color:#334155">${specialRequests}</td></tr>` : ''}
+  </table>` : ''}
+  ${(plates || iceCreamBowls || sabziBowls) ? `
+  <div class="section-title">🍽️ Crockery Required</div>
+  <table>
+    ${plates ? `<tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Plates</td><td style="padding:6px 10px;border:1px solid #e8d78a">${plates}</td></tr>` : ''}
+    ${iceCreamBowls ? `<tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Ice Cream Bowls</td><td style="padding:6px 10px;border:1px solid #e8d78a">${iceCreamBowls}</td></tr>` : ''}
+    ${sabziBowls ? `<tr><td style="padding:6px 10px;border:1px solid #e8d78a;font-weight:600;color:#0f2340">Sabzi Bowls</td><td style="padding:6px 10px;border:1px solid #e8d78a">${sabziBowls}</td></tr>` : ''}
+  </table>` : ''}
+  <div style="margin-top:28px;font-size:13px;color:#64748b">Prepared by: _______________&nbsp;&nbsp;&nbsp; Checked by: _______________&nbsp;&nbsp;&nbsp; Time out: _______________</div>
+  </div><!-- /kitchen-only -->
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-function downloadPdf() {
+function ts() { return new Date().toISOString().replace(/[-:T]/g,'').slice(0,14); }
+var cfg = { margin:10, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} };
+
+function downloadCustomer() {
   var btn = document.querySelector('.btn-row');
-  btn.style.display = 'none';
-  html2pdf().set({
-    margin: 10,
-    filename: 'BOW-Catering-${refNo}.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(document.querySelector('.page')).save().then(function() {
-    btn.style.display = 'flex';
-  });
+  var kit = document.querySelector('.kitchen-only');
+  btn.style.display = 'none'; kit.style.display = 'none';
+  document.querySelector('.customer-only').style.display = '';
+  html2pdf().set(Object.assign({}, cfg, {filename:'BOW-Customer-${refNo}-'+ts()+'.pdf'}))
+    .from(document.querySelector('.page')).save().then(function() {
+      btn.style.display = 'flex'; kit.style.display = 'none';
+    });
+}
+
+function downloadKitchen() {
+  var btn = document.querySelector('.btn-row');
+  var cust = document.querySelector('.customer-only');
+  var dear = document.querySelector('.dear');
+  btn.style.display = 'none'; cust.style.display = 'none'; dear.style.display = 'none';
+  document.querySelector('.kitchen-only').style.display = '';
+  html2pdf().set(Object.assign({}, cfg, {filename:'BOW-Kitchen-${refNo}-'+ts()+'.pdf'}))
+    .from(document.querySelector('.page')).save().then(function() {
+      btn.style.display = 'flex'; cust.style.display = ''; dear.style.display = ''; document.querySelector('.kitchen-only').style.display = 'none';
+    });
 }
 </script>
 </body>
@@ -293,8 +347,11 @@ export default function CateringBillScreen({ navigation }) {
   const [serviceEnd, setServiceEnd]               = useState('');
   const [serviceStyle, setServiceStyle]           = useState('Buffet');
 
-  // Menu
-  const [menu, setMenu] = useState({});
+  // Menu — array of { category: key, item: string }
+  const [menu, setMenu] = useState([
+    { category: 'accompaniments', item: 'Pappad, Pickle, Plain Curd, Green Chutney, Tamarind Chutney' },
+  ]);
+  const [menuCatOpen, setMenuCatOpen] = useState(false);
   const [specialRequests, setSpecialRequests] = useState('');
 
   // Pricing
@@ -302,12 +359,23 @@ export default function CateringBillScreen({ navigation }) {
   const [extraItems, setExtraItems]             = useState([EMPTY_EXTRA()]);
   const [transportationNote, setTransportation] = useState('');
   const [advancePaid, setAdvancePaid]           = useState('');
-  const [balanceAmt, setBalanceAmt]             = useState('');
+  const [plates, setPlates]                     = useState('');
+  const [iceCreamBowls, setIceCreamBowls]       = useState('');
+  const [sabziBowls, setSabziBowls]             = useState('');
 
   const [errors, setErrors] = useState({});
 
-  function setMenuField(key, val) {
-    setMenu((prev) => ({ ...prev, [key]: val }));
+  function addMenuItem(category) {
+    setMenu((prev) => [...prev, { category, item: '' }]);
+    setMenuCatOpen(false);
+  }
+
+  function updateMenuItem(idx, item) {
+    setMenu((prev) => prev.map((m, i) => i === idx ? { ...m, item } : m));
+  }
+
+  function removeMenuItem(idx) {
+    setMenu((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function updateExtra(idx, field, val) {
@@ -351,7 +419,8 @@ export default function CateringBillScreen({ navigation }) {
       guestCount, venueAddress, venueContact, venueContactPhone,
       setupTime, serviceStart, serviceEnd, serviceStyle,
       menu, pricePerPlate, extraItems, specialRequests,
-      transportationNote, advancePaid, balanceAmt,
+      transportationNote, advancePaid,
+      plates, iceCreamBowls, sabziBowls,
     });
 
     if (Platform.OS === 'web') {
@@ -452,18 +521,62 @@ export default function CateringBillScreen({ navigation }) {
           </Field>
 
           {/* ── Menu ───────────────────────────────────────────── */}
-          <Text style={styles.sectionTitle}>🍽️ Menu (fill only what's ordered)</Text>
-          {MENU_SECTIONS.map((s) => (
-            <Field key={s.key} label={`${s.emoji} ${s.label}`}>
-              <TextInput
-                style={styles.input}
-                value={menu[s.key] || ''}
-                onChangeText={(v) => setMenuField(s.key, v)}
-                placeholder={`e.g. ${s.key === 'welcomeDrink' ? 'Virgin Mojito' : s.key === 'dal' ? 'Dal Tadka' : s.key === 'breads' ? 'Phulka, Puri' : 'leave blank if not ordered'}`}
-                placeholderTextColor={THEME.slateLight}
-              />
-            </Field>
-          ))}
+          <Text style={styles.sectionTitle}>🍽️ Menu</Text>
+
+          {menu.map((m, idx) => {
+            const opt = MENU_OPTIONS[m.category];
+            const samecat = menu.filter((x) => x.category === m.category);
+            const num = samecat.length > 1 ? samecat.findIndex((x) => x === m) + 1 : 0;
+            const label = opt ? `${opt.emoji} ${opt.label}${num ? ' ' + num : ''}` : m.category;
+            return (
+              <View key={idx} style={styles.menuItemRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.menuItemLabel}>{label}</Text>
+                  {Platform.OS === 'web' ? (
+                    <select
+                      value={m.item}
+                      onChange={(e) => updateMenuItem(idx, e.target.value)}
+                      style={{ width: '100%', padding: '11px 14px', fontSize: 14, border: '1.5px solid #e8d78a', borderRadius: 10, backgroundColor: '#fff', color: m.item ? '#1e293b' : '#94a3b8', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                    >
+                      <option value="">— select item —</option>
+                      {opt && opt.items.map((it) => <option key={it} value={it}>{it}</option>)}
+                      <option value="__custom__">Other (type below)…</option>
+                    </select>
+                  ) : (
+                    <TextInput style={styles.input} value={m.item} onChangeText={(v) => updateMenuItem(idx, v)} placeholder="Item name" placeholderTextColor={THEME.slateLight} />
+                  )}
+                  {Platform.OS === 'web' && m.item === '__custom__' && (
+                    <TextInput style={[styles.input, { marginTop: 6 }]} value={m.customItem || ''} onChangeText={(v) => setMenu((prev) => prev.map((x, i) => i === idx ? { ...x, customItem: v, item: v || '__custom__' } : x))} placeholder="Type item name" placeholderTextColor={THEME.slateLight} autoFocus />
+                  )}
+                </View>
+                <TouchableOpacity style={styles.removeBtn} onPress={() => removeMenuItem(idx)}>
+                  <Text style={styles.removeBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+
+          {menuCatOpen && (
+            <View style={styles.catDropdown}>
+              {MENU_KEYS.map((k) => {
+                const o = MENU_OPTIONS[k];
+                return (
+                  <TouchableOpacity key={k} style={styles.catOption} onPress={() => addMenuItem(k)}>
+                    <Text style={styles.catOptionText}>{o.emoji} {o.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity style={[styles.catOption, { borderTopWidth: 1, borderTopColor: '#e8d78a' }]} onPress={() => setMenuCatOpen(false)}>
+                <Text style={[styles.catOptionText, { color: '#94a3b8' }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {!menuCatOpen && (
+            <TouchableOpacity style={styles.addMenuBtn} onPress={() => setMenuCatOpen(true)}>
+              <Text style={styles.addMenuBtnText}>+ Add Menu Item</Text>
+            </TouchableOpacity>
+          )}
 
           <Field label="Special Requests / Notes">
             <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} value={specialRequests} onChangeText={setSpecialRequests} placeholder="Jain food, no onion-garlic, allergies, special arrangements…" multiline placeholderTextColor={THEME.slateLight} />
@@ -503,33 +616,58 @@ export default function CateringBillScreen({ navigation }) {
             />
           </Field>
 
-          <View style={styles.twoCol}>
+          <Text style={styles.subSectionLabel}>Consumables & Crockery</Text>
+          <View style={styles.threeCol}>
             <View style={{ flex: 1 }}>
-              <Field label="Advance Paid (₹)">
+              <Field label="Plates">
                 <TextInput
                   style={styles.input}
-                  value={advancePaid}
-                  onChangeText={setAdvancePaid}
-                  placeholder={guests > 0 && ppp > 0 ? String(advance) : '0'}
-                  keyboardType="decimal-pad"
+                  value={plates}
+                  onChangeText={setPlates}
+                  placeholder="e.g. 50"
+                  keyboardType="number-pad"
                   placeholderTextColor={THEME.slateLight}
                 />
               </Field>
             </View>
-            <View style={{ width: 10 }} />
+            <View style={{ width: 8 }} />
             <View style={{ flex: 1 }}>
-              <Field label="Balance Amount (₹)">
+              <Field label="Ice Cream Bowls">
                 <TextInput
                   style={styles.input}
-                  value={balanceAmt}
-                  onChangeText={setBalanceAmt}
-                  placeholder={guests > 0 && ppp > 0 ? String(total - advance) : '0'}
-                  keyboardType="decimal-pad"
+                  value={iceCreamBowls}
+                  onChangeText={setIceCreamBowls}
+                  placeholder="e.g. 50"
+                  keyboardType="number-pad"
+                  placeholderTextColor={THEME.slateLight}
+                />
+              </Field>
+            </View>
+            <View style={{ width: 8 }} />
+            <View style={{ flex: 1 }}>
+              <Field label="Sabzi Bowls">
+                <TextInput
+                  style={styles.input}
+                  value={sabziBowls}
+                  onChangeText={setSabziBowls}
+                  placeholder="e.g. 50"
+                  keyboardType="number-pad"
                   placeholderTextColor={THEME.slateLight}
                 />
               </Field>
             </View>
           </View>
+
+          <Field label="Advance Paid (₹)">
+            <TextInput
+              style={styles.input}
+              value={advancePaid}
+              onChangeText={setAdvancePaid}
+              placeholder={guests > 0 && ppp > 0 ? String(advance) : '0'}
+              keyboardType="decimal-pad"
+              placeholderTextColor={THEME.slateLight}
+            />
+          </Field>
 
           {/* ── Live estimate ──────────────────────────────────── */}
           {guests > 0 && ppp > 0 && (
@@ -541,7 +679,7 @@ export default function CateringBillScreen({ navigation }) {
               <View style={styles.estimateRow}><Text style={styles.estimateLabel}>GST (5%)</Text><Text style={styles.estimateVal}>₹{Math.round(taxable * 0.05 * 100 / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</Text></View>
               <View style={[styles.estimateRow, styles.estimateTotalRow]}><Text style={styles.estimateTotalLabel}>Total</Text><Text style={styles.estimateTotalVal}>₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</Text></View>
               <View style={styles.estimateRow}><Text style={[styles.estimateLabel, { color: '#16a34a' }]}>Advance Paid</Text><Text style={[styles.estimateVal, { color: '#16a34a', fontWeight: '700' }]}>₹{(parseFloat(advancePaid) || advance).toLocaleString('en-IN')}</Text></View>
-              <View style={styles.estimateRow}><Text style={[styles.estimateLabel, { color: '#c9a840' }]}>Balance</Text><Text style={[styles.estimateVal, { color: '#c9a840', fontWeight: '700' }]}>₹{(parseFloat(balanceAmt) || (total - advance)).toLocaleString('en-IN')}</Text></View>
+              <View style={styles.estimateRow}><Text style={[styles.estimateLabel, { color: '#c9a840' }]}>Balance</Text><Text style={[styles.estimateVal, { color: '#c9a840', fontWeight: '700' }]}>₹{(total - (parseFloat(advancePaid) || advance)).toLocaleString('en-IN')}</Text></View>
             </View>
           )}
 
@@ -628,6 +766,22 @@ const styles = StyleSheet.create({
   estimateTotalVal: { fontSize: 15, fontWeight: 'bold', color: THEME.gold },
 
   twoCol: { flexDirection: 'row', alignItems: 'flex-start' },
+  threeCol: { flexDirection: 'row', alignItems: 'flex-start' },
+
+  menuItemRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12, gap: 8 },
+  menuItemLabel: { fontSize: 13, fontWeight: '600', color: THEME.navy, marginBottom: 5 },
+  addMenuBtn: {
+    borderWidth: 1.5, borderColor: THEME.gold, borderRadius: 10, borderStyle: 'dashed',
+    paddingVertical: 12, alignItems: 'center', marginTop: 4, backgroundColor: '#fffdf0',
+  },
+  addMenuBtnText: { color: THEME.navy, fontWeight: '700', fontSize: 14 },
+  catDropdown: {
+    backgroundColor: '#fff', borderWidth: 1.5, borderColor: THEME.goldBorder,
+    borderRadius: 12, marginTop: 4, overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 4,
+  },
+  catOption: { paddingVertical: 13, paddingHorizontal: 16 },
+  catOptionText: { fontSize: 14, color: THEME.navy, fontWeight: '500' },
 
   generateBtn: {
     backgroundColor: THEME.navy, borderRadius: 12,
