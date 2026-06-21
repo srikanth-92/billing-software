@@ -8,6 +8,35 @@ import { THEME } from '../constants/theme';
 import { generateOrderId, formatCurrency } from '../utils/razorpay';
 import { loadWeeklyMenu, subscribeCartOverrides } from '../utils/storage';
 
+// Redirect to system browser if opened inside an in-app WebView
+// (WhatsApp, Instagram, Facebook, QR scanner apps, etc.)
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  const ua = navigator.userAgent || '';
+  const isInAppBrowser =
+    /FBAN|FBAV|Instagram|WhatsApp|Line\/|Twitter|Snapchat|TikTok|MicroMessenger|GSA|KAKAOTALK/i.test(ua) ||
+    // Android WebView
+    (/Android/.test(ua) && /wv\b/.test(ua)) ||
+    // Generic in-app: has WebView in UA but not a standalone browser
+    (/WebView/.test(ua) && !/Chrome\/\d/.test(ua));
+
+  if (isInAppBrowser) {
+    const url = window.location.href;
+    // Try Chrome intent (Android) then universal fallback
+    const isAndroid = /Android/i.test(ua);
+    if (isAndroid) {
+      window.location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+    } else {
+      // iOS: show a banner since we can't force Safari
+      document.addEventListener('DOMContentLoaded', function () {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#0d1b3e;color:#d4af5a;padding:14px 16px;font-family:sans-serif;font-size:14px;text-align:center;';
+        banner.innerHTML = 'For the best experience, open this in Safari. <a href="' + url + '" target="_blank" style="color:#fff;font-weight:bold;margin-left:8px;">Open in Safari ↗</a>';
+        document.body.prepend(banner);
+      });
+    }
+  }
+}
+
 const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner'];
 const CATEGORY_TIMES = {
   Breakfast: '7:00–10:00 AM',
