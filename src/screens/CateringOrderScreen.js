@@ -113,10 +113,9 @@ const MENU_SECTIONS = [
     title: 'Welcome Drink',
     emoji: '🥤',
     items: [
-      'Masala Lassi', 'Sweet Lassi', 'Mango Lassi', 'Shikanji',
-      'Badam Milk', 'Lemon Iced Tea', 'Peach Iced Tea',
+      'Shikanji', 'Badam Milk',
       'Virgin Mojito', 'Watermelon Juice', 'Fresh Lime Soda',
-      'Cold Coffee', 'Masala Chai', 'Filter Coffee',
+      'Masala Chai', 'Filter Coffee',
     ],
   },
   {
@@ -124,7 +123,7 @@ const MENU_SECTIONS = [
     emoji: '🍜',
     items: [
       'Tomato Soup', 'Sweet Corn Soup', 'Hot & Sour Soup',
-      'Veg Clear Soup', 'Manchow Soup', 'Wonton Soup',
+      'Veg Clear Soup', 'Manchow Soup',
     ],
   },
   {
@@ -132,7 +131,6 @@ const MENU_SECTIONS = [
     emoji: '🥙',
     items: [
       'Hara Bhara Kabab', 'Aloo Tikki',
-      'Veg Seekh Kabab', 'Corn Kabab', 'Dahi Ke Sholay',
       'Kachori', 'Samosa', 'Dahi Puri',
     ],
   },
@@ -199,8 +197,7 @@ const MENU_SECTIONS = [
     title: 'Breads',
     emoji: '🫓',
     items: [
-      'Roti / Fulka', 'Wheat Paratha', 'Laccha Paratha',
-      'Aloo Paratha', 'Gobi Paratha', 'Puri', 'Bhature',
+      'Roti / Fulka', 'Wheat Paratha', 'Puri', 'Bhature',
     ],
   },
   {

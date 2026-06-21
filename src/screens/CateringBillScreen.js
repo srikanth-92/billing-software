@@ -15,9 +15,9 @@ function nextRef() { return String(++_refCounter).padStart(4, '0'); }
 const SERVICE_STYLES = ['Buffet', 'Sit-down', 'Live Counters', 'High Tea'];
 
 const MENU_OPTIONS = {
-  welcomeDrink:  { label: 'Welcome Drink',   emoji: '🥤', items: ['Virgin Mojito', 'Lemonade', 'Buttermilk', 'Jaljeera', 'Rose Sharbat', 'Mango Lassi', 'Coconut Water', 'Aam Panna', 'Cold Coffee'] },
+  welcomeDrink:  { label: 'Welcome Drink',   emoji: '🥤', items: ['Virgin Mojito', 'Lemonade', 'Buttermilk', 'Jaljeera', 'Rose Sharbat', 'Coconut Water', 'Aam Panna'] },
   soup:          { label: 'Soup',            emoji: '🍜', items: ['Tomato Soup', 'Sweet Corn Soup', 'Manchow Soup', 'Hot & Sour Soup', 'Lemon Coriander Soup', 'Cream of Mushroom'] },
-  starter:       { label: 'Starter',         emoji: '🥙', items: ['Hara Bhara Kabab', 'Aloo Tikki', 'Paneer Tikka', 'Veg Seekh Kabab', 'Samosa', 'Spring Roll', 'Stuffed Mushroom', 'Corn Cheese Ball', 'Dahi Kabab', 'Veg Cutlet'] },
+  starter:       { label: 'Starter',         emoji: '🥙', items: ['Hara Bhara Kabab', 'Aloo Tikki', 'Paneer Tikka', 'Samosa', 'Spring Roll', 'Stuffed Mushroom', 'Corn Cheese Ball', 'Dahi Kabab', 'Veg Cutlet'] },
   mainCourse:    { label: 'Main Course',      emoji: '🍛', items: ['Kadhai Paneer', 'Paneer Butter Masala', 'Shahi Paneer', 'Matar Paneer', 'Paneer Lababdar', 'Palak Paneer', 'Paneer Do Pyaza', 'Paneer Tikka Masala', 'Mix Veg', 'Aloo Gobi', 'Aloo Jeera', 'Bhindi Masala', 'Jeera Aloo', 'Gobhi Manchurian', 'Baby Corn Masala', 'Mushroom Masala', 'Capsicum Sabzi'] },
   dal:           { label: 'Dal',             emoji: '🫕', items: ['Dal Tadka', 'Dal Makhani', 'Dal Fry', 'Chana Masala', 'Rajma', 'Panchratna Dal', 'Yellow Dal'] },
   continental:   { label: 'Continental',     emoji: '🥪', items: ['Pasta Arrabiata', 'White Sauce Pasta', 'Pesto Pasta', 'Garlic Bread', 'Veg Au Gratin', 'Stuffed Capsicum'] },
