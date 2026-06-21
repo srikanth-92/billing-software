@@ -9,30 +9,35 @@ import { generateOrderId, formatCurrency } from '../utils/razorpay';
 import { loadWeeklyMenu, subscribeCartOverrides } from '../utils/storage';
 
 // Redirect to system browser if opened inside an in-app WebView
-// (WhatsApp, Instagram, Facebook, QR scanner apps, etc.)
+// (WhatsApp, Instagram, Facebook, UPI apps, QR scanner apps, etc.)
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
   const ua = navigator.userAgent || '';
   const isInAppBrowser =
+    // Social media
     /FBAN|FBAV|Instagram|WhatsApp|Line\/|Twitter|Snapchat|TikTok|MicroMessenger|GSA|KAKAOTALK/i.test(ua) ||
-    // Android WebView
+    // UPI / payment apps (Android WebView used by PhonePe, GPay, Paytm, BHIM, Amazon Pay, Cred, etc.)
+    /PhonePe|Paytm|BHIM|GooglePay|Gpay|AmazonPay|CredApp|MobiKwik|FreeCharge|JioPay|YesPay|iMobile/i.test(ua) ||
+    // Android WebView flag (catches most UPI & scanner apps)
     (/Android/.test(ua) && /wv\b/.test(ua)) ||
-    // Generic in-app: has WebView in UA but not a standalone browser
+    // Generic in-app: WebView present but not a standalone browser
     (/WebView/.test(ua) && !/Chrome\/\d/.test(ua));
 
   if (isInAppBrowser) {
     const url = window.location.href;
-    // Try Chrome intent (Android) then universal fallback
     const isAndroid = /Android/i.test(ua);
     if (isAndroid) {
-      window.location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+      // Chrome intent — falls back to browser chooser if Chrome not installed
+      window.location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
     } else {
-      // iOS: show a banner since we can't force Safari
-      document.addEventListener('DOMContentLoaded', function () {
-        const banner = document.createElement('div');
-        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#0d1b3e;color:#d4af5a;padding:14px 16px;font-family:sans-serif;font-size:14px;text-align:center;';
-        banner.innerHTML = 'For the best experience, open this in Safari. <a href="' + url + '" target="_blank" style="color:#fff;font-weight:bold;margin-left:8px;">Open in Safari ↗</a>';
+      // iOS: can't force Safari, show a persistent banner
+      function showOpenInSafariBanner() {
+        var banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#0d1b3e;color:#d4af5a;padding:14px 16px;font-family:sans-serif;font-size:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);';
+        banner.innerHTML = '⚠️ Please open in Safari to place your order. <a href="' + url + '" target="_blank" style="color:#fff;font-weight:bold;margin-left:8px;text-decoration:underline;">Open in Safari ↗</a>';
         document.body.prepend(banner);
-      });
+      }
+      if (document.body) showOpenInSafariBanner();
+      else document.addEventListener('DOMContentLoaded', showOpenInSafariBanner);
     }
   }
 }
