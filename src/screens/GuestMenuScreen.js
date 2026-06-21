@@ -8,36 +8,62 @@ import { THEME } from '../constants/theme';
 import { generateOrderId, formatCurrency } from '../utils/razorpay';
 import { loadWeeklyMenu, subscribeCartOverrides } from '../utils/storage';
 
-// Redirect to system browser if opened inside an in-app WebView
-// (WhatsApp, Instagram, Facebook, UPI apps, QR scanner apps, etc.)
+// Force open in system browser when scanned from ANY in-app WebView.
+// Strategy:
+//   Android — redirect if NOT a known standalone browser (catches every app
+//             that has a QR scanner: UPI apps, social media, bank apps,
+//             e-commerce, QR scanner utilities, etc.)
+//   iOS     — UA spoofing makes detection unreliable; show a persistent banner.
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
   const ua = navigator.userAgent || '';
-  const isInAppBrowser =
-    // Social media
-    /FBAN|FBAV|Instagram|WhatsApp|Line\/|Twitter|Snapchat|TikTok|MicroMessenger|GSA|KAKAOTALK/i.test(ua) ||
-    // UPI / payment apps (Android WebView used by PhonePe, GPay, Paytm, BHIM, Amazon Pay, Cred, etc.)
-    /PhonePe|Paytm|BHIM|GooglePay|Gpay|AmazonPay|CredApp|MobiKwik|FreeCharge|JioPay|YesPay|iMobile/i.test(ua) ||
-    // Android WebView flag (catches most UPI & scanner apps)
-    (/Android/.test(ua) && /wv\b/.test(ua)) ||
-    // Generic in-app: WebView present but not a standalone browser
-    (/WebView/.test(ua) && !/Chrome\/\d/.test(ua));
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+  // Known standalone browsers — these are fine, do NOT redirect
+  const isStandaloneBrowser =
+    (isAndroid && /Chrome\/\d/.test(ua) && !/wv\b/.test(ua)) ||  // Chrome (real, not WebView)
+    /SamsungBrowser\/\d/.test(ua) ||   // Samsung Internet
+    /Firefox\/\d/.test(ua) ||          // Firefox
+    /OPR\/\d/.test(ua) ||              // Opera
+    /EdgA\/\d/.test(ua) ||             // Edge (Android)
+    /EdgiOS\/\d/.test(ua) ||           // Edge (iOS)
+    /Brave\//.test(ua) ||              // Brave
+    /DuckDuckGo\//.test(ua) ||         // DuckDuckGo
+    /Vivaldi\//.test(ua);              // Vivaldi
+
+  const isInAppBrowser = !isStandaloneBrowser && (
+    isAndroid ||  // Any Android that isn't a standalone browser above → in-app
+    // iOS explicit in-app signals (social + UPI apps that leak UA tokens)
+    /FBAN|FBAV|Instagram|WhatsApp|Snapchat|TikTok|Twitter|Line\/|MicroMessenger|KAKAOTALK/i.test(ua) ||
+    /PhonePe|Paytm|BHIM|GooglePay|AmazonPay|CredApp|MobiKwik|FreeCharge|JioPay|iMobile|Navi\/|Slice\/|Jupiter\//i.test(ua) ||
+    /WebView/.test(ua)
+  );
 
   if (isInAppBrowser) {
     const url = window.location.href;
-    const isAndroid = /Android/i.test(ua);
     if (isAndroid) {
-      // Chrome intent — falls back to browser chooser if Chrome not installed
-      window.location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+      // Chrome intent with fallback to browser chooser
+      window.location.href =
+        'intent://' + url.replace(/^https?:\/\//, '') +
+        '#Intent;scheme=https;package=com.android.chrome;' +
+        'S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
     } else {
-      // iOS: can't force Safari, show a persistent banner
-      function showOpenInSafariBanner() {
-        var banner = document.createElement('div');
-        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#0d1b3e;color:#d4af5a;padding:14px 16px;font-family:sans-serif;font-size:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);';
-        banner.innerHTML = '⚠️ Please open in Safari to place your order. <a href="' + url + '" target="_blank" style="color:#fff;font-weight:bold;margin-left:8px;text-decoration:underline;">Open in Safari ↗</a>';
-        document.body.prepend(banner);
+      // iOS — show persistent banner with tap-to-open link
+      function showSafariBanner() {
+        var b = document.createElement('div');
+        b.style.cssText =
+          'position:fixed;top:0;left:0;right:0;z-index:9999;' +
+          'background:#0d1b3e;color:#d4af5a;padding:14px 16px;' +
+          'font-family:sans-serif;font-size:14px;text-align:center;' +
+          'box-shadow:0 2px 8px rgba(0,0,0,0.5);';
+        b.innerHTML =
+          '⚠️ Open in Safari to place your order &nbsp;' +
+          '<a href="' + url + '" target="_blank" ' +
+          'style="color:#fff;font-weight:bold;text-decoration:underline;">' +
+          'Open in Safari ↗</a>';
+        document.body ? document.body.prepend(b) : document.addEventListener('DOMContentLoaded', function() { document.body.prepend(b); });
       }
-      if (document.body) showOpenInSafariBanner();
-      else document.addEventListener('DOMContentLoaded', showOpenInSafariBanner);
+      showSafariBanner();
     }
   }
 }
