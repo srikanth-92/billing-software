@@ -43,5 +43,91 @@
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+
+    <!-- In-app browser gate: runs before React loads. If the page is opened inside
+         a WebView (Paytm, PhonePe, WhatsApp, Instagram, etc.), paint a full-screen
+         interstitial immediately. The "Open in Browser" button calls window.open from
+         a real user tap — the only navigation WKWebView allows. React never gets to
+         mount on top because the overlay is position:fixed and we block #root. -->
+    <script>
+      (function () {
+        var ua = navigator.userAgent || '';
+        var isAndroid = /Android/i.test(ua);
+        var isIOS = /iPhone|iPad|iPod/i.test(ua);
+        var inApp = false;
+
+        if (isAndroid) {
+          var standalone =
+            (/Chrome\/\d/.test(ua) && !/wv\b/.test(ua)) ||
+            /SamsungBrowser\/\d/.test(ua) ||
+            /Firefox\/\d/.test(ua) ||
+            /OPR\/\d/.test(ua) ||
+            /EdgA\/\d/.test(ua) ||
+            /Brave\//.test(ua) ||
+            /DuckDuckGo\//.test(ua) ||
+            /Vivaldi\//.test(ua);
+          inApp = !standalone;
+        } else if (isIOS) {
+          // Real Safari always has "Version/X.X Safari/" — WKWebView never does
+          inApp = (
+            !/Version\/[\d.]+ .*Safari\//.test(ua) &&
+            !/CriOS\/\d/.test(ua) &&
+            !/FxiOS\/\d/.test(ua) &&
+            !/EdgiOS\/\d/.test(ua)
+          );
+        }
+
+        if (!inApp) return;
+
+        // Android: Chrome intent redirect works from code, no tap needed
+        if (isAndroid) {
+          var u = window.location.href;
+          var noScheme = u.replace(/^https?:\/\//, '');
+          window.location.href =
+            'intent://' + noScheme +
+            '#Intent;scheme=https;package=com.android.chrome;' +
+            'S.browser_fallback_url=' + encodeURIComponent(
+              'intent://' + noScheme +
+              '#Intent;scheme=https;action=android.intent.action.VIEW;' +
+              'category=android.intent.category.BROWSABLE;end'
+            ) + ';end';
+          return;
+        }
+
+        // iOS: block React from mounting, show interstitial instead
+        var root = document.getElementById('root');
+        if (root) root.style.display = 'none';
+
+        var url = window.location.href;
+        var overlay = document.createElement('div');
+        overlay.style.cssText = [
+          'position:fixed;top:0;left:0;width:100%;height:100%;',
+          'background:#1a1a2e;z-index:2147483647;',
+          'display:flex;flex-direction:column;align-items:center;justify-content:center;',
+          'font-family:-apple-system,BlinkMacSystemFont,sans-serif;',
+          'padding:32px;box-sizing:border-box;text-align:center;'
+        ].join('');
+        overlay.innerHTML = [
+          '<div style="font-size:64px;margin-bottom:16px">🍽️</div>',
+          '<h1 style="color:#c9a84c;font-size:24px;margin:0 0 12px 0;font-weight:700">Buffet on Wheels</h1>',
+          '<p style="color:rgba(255,255,255,0.72);font-size:15px;margin:0 0 40px 0;max-width:300px;line-height:1.5">',
+            'Open this page in your browser for the best experience.',
+          '</p>',
+          '<button id="bow-btn" style="',
+            'background:#c9a84c;color:#1a1a2e;border:none;border-radius:14px;',
+            'padding:18px 0;font-size:18px;font-weight:700;cursor:pointer;',
+            'width:100%;max-width:300px;-webkit-tap-highlight-color:transparent;',
+          '">Open in Browser</button>',
+          '<p style="color:rgba(255,255,255,0.3);font-size:12px;margin-top:24px">',
+            'Tap the button above to continue',
+          '</p>'
+        ].join('');
+
+        document.body.appendChild(overlay);
+        document.getElementById('bow-btn').addEventListener('click', function () {
+          window.open(url, '_blank');
+        });
+      })();
+    </script>
   </body>
 </html>

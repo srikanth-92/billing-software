@@ -8,32 +8,6 @@ import { THEME } from '../constants/theme';
 import { generateOrderId, formatCurrency } from '../utils/razorpay';
 import { loadWeeklyMenu, subscribeCartOverrides } from '../utils/storage';
 
-function detectInAppBrowser() {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  if (/Android/i.test(ua)) {
-    const standalone =
-      (/Chrome\/\d/.test(ua) && !/wv\b/.test(ua)) ||
-      /SamsungBrowser\/\d/.test(ua) ||
-      /Firefox\/\d/.test(ua) ||
-      /OPR\/\d/.test(ua) ||
-      /EdgA\/\d/.test(ua) ||
-      /Brave\//.test(ua) ||
-      /DuckDuckGo\//.test(ua) ||
-      /Vivaldi\//.test(ua);
-    return !standalone;
-  }
-  if (/iPhone|iPad|iPod/i.test(ua)) {
-    // Real Safari always has "Version/X.X Safari/" — WKWebView (every in-app browser) never does
-    return (
-      !/Version\/[\d.]+ .*Safari\//.test(ua) &&
-      !/CriOS\/\d/.test(ua) &&
-      !/FxiOS\/\d/.test(ua) &&
-      !/EdgiOS\/\d/.test(ua)
-    );
-  }
-  return false;
-}
 
 const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner'];
 const CATEGORY_TIMES = {
@@ -61,13 +35,9 @@ export default function GuestMenuScreen({ navigation, route }) {
   const [disabledItems, setDisabledItems] = useState(new Set());
   const [cart, setCart] = useState({});
   const [activeTab, setActiveTab] = useState(getMealTab);
-  const [showInterstitial] = useState(() => detectInAppBrowser());
-
   const cartId = route?.params?.cartId || 'cart1';
 
-  // Hooks must all be called unconditionally before any early return
   useEffect(() => {
-    if (showInterstitial) return;
     loadWeeklyMenu().then((saved) => {
       const defaults = {};
       CATEGORIES.forEach((cat) => { defaults[cat] = MENU_ITEMS.filter((i) => i.category === cat); });
@@ -76,48 +46,12 @@ export default function GuestMenuScreen({ navigation, route }) {
       CATEGORIES.forEach((cat) => { if (!merged[cat] || !merged[cat].length) merged[cat] = defaults[cat]; });
       setMenuData(merged);
     });
-  }, [showInterstitial]);
+  }, []);
 
   useEffect(() => {
-    if (showInterstitial) return;
     const unsub = subscribeCartOverrides(cartId, (ids) => setDisabledItems(new Set(ids)));
     return () => unsub();
-  }, [cartId, showInterstitial]);
-
-  if (showInterstitial) {
-    const url = Platform.OS === 'web' ? window.location.href : '';
-    const isAndroid = /Android/i.test(Platform.OS === 'web' ? (navigator.userAgent || '') : '');
-
-    function openInBrowser() {
-      if (isAndroid) {
-        const urlNoScheme = url.replace(/^https?:\/\//, '');
-        window.location.href =
-          'intent://' + urlNoScheme +
-          '#Intent;scheme=https;package=com.android.chrome;' +
-          'S.browser_fallback_url=' + encodeURIComponent(
-            'intent://' + urlNoScheme +
-            '#Intent;scheme=https;action=android.intent.action.VIEW;' +
-            'category=android.intent.category.BROWSABLE;end'
-          ) + ';end';
-      } else {
-        window.open(url, '_blank');
-      }
-    }
-
-    return (
-      <View style={interstitialStyles.container}>
-        <Text style={interstitialStyles.emoji}>🍽️</Text>
-        <Text style={interstitialStyles.title}>Buffet on Wheels</Text>
-        <Text style={interstitialStyles.body}>
-          For the best experience, open this page in your browser.
-        </Text>
-        <TouchableOpacity style={interstitialStyles.button} onPress={openInBrowser} activeOpacity={0.85}>
-          <Text style={interstitialStyles.buttonText}>Open in Browser</Text>
-        </TouchableOpacity>
-        <Text style={interstitialStyles.hint}>Tap the button above to continue</Text>
-      </View>
-    );
-  }
+  }, [cartId]);
 
   const allItems = (menuData ? Object.values(menuData).flat() : MENU_ITEMS)
     .filter((item) => !disabledItems.has(item.id));
@@ -397,34 +331,5 @@ const styles = StyleSheet.create({
   confirmPayBtnText: { color: THEME.navy, fontWeight: 'bold', fontSize: 16 },
   skipBtn: { alignItems: 'center', paddingVertical: 14 },
   skipBtnText: { color: THEME.slate, fontSize: 14 },
-});
-
-const interstitialStyles = StyleSheet.create({
-  container: {
-    flex: 1, backgroundColor: '#1a1a2e',
-    alignItems: 'center', justifyContent: 'center',
-    padding: 32,
-  },
-  emoji: { fontSize: 64, marginBottom: 16, textAlign: 'center' },
-  title: {
-    color: '#c9a84c', fontSize: 26, fontWeight: '700',
-    marginBottom: 12, textAlign: 'center',
-  },
-  body: {
-    color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 22,
-    textAlign: 'center', marginBottom: 40, maxWidth: 300,
-  },
-  button: {
-    backgroundColor: '#c9a84c', borderRadius: 14,
-    paddingVertical: 18, paddingHorizontal: 0,
-    width: '100%', maxWidth: 300, alignItems: 'center',
-  },
-  buttonText: {
-    color: '#1a1a2e', fontSize: 18, fontWeight: '700', letterSpacing: 0.3,
-  },
-  hint: {
-    color: 'rgba(255,255,255,0.3)', fontSize: 12,
-    marginTop: 24, textAlign: 'center',
-  },
 });
 
