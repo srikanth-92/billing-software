@@ -61,29 +61,24 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
           'category=android.intent.category.BROWSABLE;end'
         ) + ';end';
     } else {
-      // iOS: try to open Chrome first; if not installed, show banner for both Chrome & Safari
-      function showIOSBanner() {
-        var b = document.createElement('div');
-        b.style.cssText =
-          'position:fixed;top:0;left:0;right:0;z-index:9999;' +
-          'background:#0d1b3e;color:#d4af5a;padding:16px;' +
-          'font-family:sans-serif;font-size:14px;text-align:center;' +
-          'box-shadow:0 2px 8px rgba(0,0,0,0.6);line-height:1.8;';
-        b.innerHTML =
-          '⚠️ Please open in a browser to place your order<br/>' +
-          '<a href="googlechromes://' + urlNoScheme + '" ' +
-          'style="color:#fff;font-weight:bold;text-decoration:underline;margin:0 10px;">Open in Chrome ↗</a>' +
-          '&nbsp;&nbsp;' +
-          '<a href="' + url + '" target="_blank" ' +
-          'style="color:#d4af5a;font-weight:bold;text-decoration:underline;margin:0 10px;">Open in Safari ↗</a>';
-        document.body ? document.body.prepend(b) : document.addEventListener('DOMContentLoaded', function () { document.body.prepend(b); });
-      }
-      // Attempt Chrome first; detect if it opened by listening for page blur
+      // iOS: try Chrome first via URL scheme.
+      // If Chrome isn't installed, open in the system default browser via window.open(_blank)
+      // which WKWebView always hands off to the OS default browser.
       var pageLeft = false;
       window.addEventListener('pagehide', function () { pageLeft = true; });
       window.addEventListener('blur', function () { pageLeft = true; });
       window.location.href = 'googlechromes://' + urlNoScheme;
-      setTimeout(function () { if (!pageLeft) showIOSBanner(); }, 600);
+      setTimeout(function () {
+        if (!pageLeft) {
+          // Chrome not installed — open in OS default browser (Safari or user's default)
+          var a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body ? document.body.appendChild(a) : document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(a); });
+          a.click();
+        }
+      }, 600);
     }
   }
 }
