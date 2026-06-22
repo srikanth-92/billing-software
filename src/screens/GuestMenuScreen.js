@@ -8,23 +8,23 @@ import { THEME } from '../constants/theme';
 import { generateOrderId, formatCurrency } from '../utils/razorpay';
 import { loadWeeklyMenu, subscribeCartOverrides } from '../utils/storage';
 
-// Force open in system browser when scanned from ANY in-app WebView.
+// Detect in-app WebView and show a tap-to-open interstitial.
 //
-// Android: redirect if NOT a known standalone browser.
-// iOS:     WKWebView (used by every in-app scanner — Paytm, PhonePe, WhatsApp,
-//          Instagram, etc.) spoofs Safari UA but OMITS "Version/X Safari/" tokens
-//          that real Safari always includes. We use that to detect it reliably.
+// WKWebView (every iOS in-app scanner: Paytm, PhonePe, WhatsApp, Instagram, etc.)
+// BLOCKS all programmatic navigation from timers/events. The ONLY thing it allows
+// is window.open called synchronously from a real user tap.
+// Solution: render a full-screen overlay with a tap button. The tap IS a real gesture.
+//
+// Android: Chrome intent URL works fine from code (no gesture needed).
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
   var ua = navigator.userAgent || '';
   var isAndroid = /Android/i.test(ua);
   var isIOS = /iPhone|iPad|iPod/i.test(ua);
-
   var isInAppBrowser = false;
 
   if (isAndroid) {
-    // Standalone browsers include their own token and do NOT set the wv flag
     var isStandaloneAndroid =
-      (/Chrome\/\d/.test(ua) && !/wv\b/.test(ua)) ||  // Chrome (real)
+      (/Chrome\/\d/.test(ua) && !/wv\b/.test(ua)) ||
       /SamsungBrowser\/\d/.test(ua) ||
       /Firefox\/\d/.test(ua) ||
       /OPR\/\d/.test(ua) ||
@@ -34,24 +34,19 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
       /Vivaldi\//.test(ua);
     isInAppBrowser = !isStandaloneAndroid;
   } else if (isIOS) {
-    // Real Safari always has both "Version/X.X" AND "Safari/" in the UA.
-    // WKWebView (every in-app browser on iOS) has neither — it just says "Mobile/XXXX".
+    // Real Safari always includes "Version/X.X Safari/" — WKWebView never does.
     var isRealSafari = /Version\/[\d.]+ .*Safari\//.test(ua);
-    // Chrome for iOS identifies itself with CriOS
     var isChromeiOS = /CriOS\/\d/.test(ua);
-    // Firefox for iOS
     var isFirefoxiOS = /FxiOS\/\d/.test(ua);
-    // Edge for iOS
     var isEdgeiOS = /EdgiOS\/\d/.test(ua);
     isInAppBrowser = !isRealSafari && !isChromeiOS && !isFirefoxiOS && !isEdgeiOS;
   }
 
   if (isInAppBrowser) {
-    var url = window.location.href;
-    var urlNoScheme = url.replace(/^https?:\/\//, '');
+    var currentUrl = window.location.href;
+    var urlNoScheme = currentUrl.replace(/^https?:\/\//, '');
 
     if (isAndroid) {
-      // Chrome intent; falls back to system browser chooser if Chrome not installed
       window.location.href =
         'intent://' + urlNoScheme +
         '#Intent;scheme=https;package=com.android.chrome;' +
@@ -61,24 +56,45 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
           'category=android.intent.category.BROWSABLE;end'
         ) + ';end';
     } else {
-      // iOS: try Chrome first via URL scheme.
-      // If Chrome isn't installed, open in the system default browser via window.open(_blank)
-      // which WKWebView always hands off to the OS default browser.
-      var pageLeft = false;
-      window.addEventListener('pagehide', function () { pageLeft = true; });
-      window.addEventListener('blur', function () { pageLeft = true; });
-      window.location.href = 'googlechromes://' + urlNoScheme;
-      setTimeout(function () {
-        if (!pageLeft) {
-          // Chrome not installed — open in OS default browser (Safari or user's default)
-          var a = document.createElement('a');
-          a.href = url;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          document.body ? document.body.appendChild(a) : document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(a); });
-          a.click();
-        }
-      }, 600);
+      // iOS: show a full-screen interstitial. The button tap is a real gesture,
+      // so window.open(_blank) is allowed by WKWebView and hands off to the OS browser.
+      var overlayHTML = [
+        '<div id="bow-overlay" style="',
+          'position:fixed;top:0;left:0;width:100%;height:100%;',
+          'background:#1a1a2e;z-index:2147483647;',
+          'display:flex;flex-direction:column;align-items:center;justify-content:center;',
+          'font-family:-apple-system,BlinkMacSystemFont,sans-serif;',
+          'padding:32px;box-sizing:border-box;text-align:center;">',
+        '<div style="font-size:60px;margin-bottom:16px">🍽️</div>',
+        '<h1 style="color:#c9a84c;font-size:24px;margin:0 0 12px;font-weight:700">Buffet on Wheels</h1>',
+        '<p style="color:rgba(255,255,255,0.75);font-size:15px;margin:0 0 36px;max-width:300px;line-height:1.5">',
+          'Open this page in your browser for the best experience.',
+        '</p>',
+        '<button id="bow-open-btn" style="',
+          'background:#c9a84c;color:#1a1a2e;border:none;border-radius:14px;',
+          'padding:18px 0;font-size:18px;font-weight:700;cursor:pointer;',
+          'width:100%;max-width:300px;letter-spacing:0.3px;',
+          '-webkit-tap-highlight-color:transparent;">',
+          'Open in Browser',
+        '</button>',
+        '<p style="color:rgba(255,255,255,0.35);font-size:12px;margin-top:24px">',
+          'Tap the button above to continue',
+        '</p>',
+        '</div>'
+      ].join('');
+
+      function attachOverlay() {
+        document.body.insertAdjacentHTML('beforeend', overlayHTML);
+        document.getElementById('bow-open-btn').addEventListener('click', function () {
+          window.open(currentUrl, '_blank');
+        });
+      }
+
+      if (document.body) {
+        attachOverlay();
+      } else {
+        document.addEventListener('DOMContentLoaded', attachOverlay);
+      }
     }
   }
 }
