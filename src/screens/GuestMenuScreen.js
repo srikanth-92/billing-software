@@ -41,29 +41,43 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
 
   if (isInAppBrowser) {
     const url = window.location.href;
+    const urlNoScheme = url.replace(/^https?:\/\//, '');
+
     if (isAndroid) {
-      // Chrome intent with fallback to browser chooser
+      // 1st choice: Chrome; if not installed Android falls back to browser chooser
       window.location.href =
-        'intent://' + url.replace(/^https?:\/\//, '') +
+        'intent://' + urlNoScheme +
         '#Intent;scheme=https;package=com.android.chrome;' +
-        'S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+        'S.browser_fallback_url=' + encodeURIComponent(
+          'intent://' + urlNoScheme +
+          '#Intent;scheme=https;action=android.intent.action.VIEW;' +
+          'category=android.intent.category.BROWSABLE;end'
+        ) + ';end';
     } else {
-      // iOS — show persistent banner with tap-to-open link
-      function showSafariBanner() {
+      // iOS — try Chrome first (googlechromes:// scheme), fall back to Safari banner
+      function showBrowserBanner(preferChrome) {
         var b = document.createElement('div');
         b.style.cssText =
           'position:fixed;top:0;left:0;right:0;z-index:9999;' +
           'background:#0d1b3e;color:#d4af5a;padding:14px 16px;' +
           'font-family:sans-serif;font-size:14px;text-align:center;' +
           'box-shadow:0 2px 8px rgba(0,0,0,0.5);';
+        var chromeLink = preferChrome
+          ? '<a href="googlechromes://' + urlNoScheme + '" style="color:#fff;font-weight:bold;text-decoration:underline;margin:0 6px;">Open in Chrome ↗</a> &nbsp;|&nbsp;'
+          : '';
         b.innerHTML =
-          '⚠️ Open in Safari to place your order &nbsp;' +
+          '⚠️ Open in a browser to place your order &nbsp;' +
+          chromeLink +
           '<a href="' + url + '" target="_blank" ' +
-          'style="color:#fff;font-weight:bold;text-decoration:underline;">' +
-          'Open in Safari ↗</a>';
-        document.body ? document.body.prepend(b) : document.addEventListener('DOMContentLoaded', function() { document.body.prepend(b); });
+          'style="color:#d4af5a;font-weight:bold;text-decoration:underline;margin:0 6px;">Open in Safari ↗</a>';
+        document.body ? document.body.prepend(b) : document.addEventListener('DOMContentLoaded', function () { document.body.prepend(b); });
       }
-      showSafariBanner();
+      // Try Chrome via URL scheme; if app isn't installed the redirect fails silently
+      // Use a short timer — if the page is still visible after 500ms Chrome wasn't installed
+      var left = true;
+      window.addEventListener('blur', function () { left = false; });
+      window.location.href = 'googlechromes://' + urlNoScheme;
+      setTimeout(function () { if (left) showBrowserBanner(true); }, 500);
     }
   }
 }
