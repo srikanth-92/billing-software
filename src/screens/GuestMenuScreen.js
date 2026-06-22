@@ -9,42 +9,49 @@ import { generateOrderId, formatCurrency } from '../utils/razorpay';
 import { loadWeeklyMenu, subscribeCartOverrides } from '../utils/storage';
 
 // Force open in system browser when scanned from ANY in-app WebView.
-// Strategy:
-//   Android — redirect if NOT a known standalone browser (catches every app
-//             that has a QR scanner: UPI apps, social media, bank apps,
-//             e-commerce, QR scanner utilities, etc.)
-//   iOS     — UA spoofing makes detection unreliable; show a persistent banner.
+//
+// Android: redirect if NOT a known standalone browser.
+// iOS:     WKWebView (used by every in-app scanner — Paytm, PhonePe, WhatsApp,
+//          Instagram, etc.) spoofs Safari UA but OMITS "Version/X Safari/" tokens
+//          that real Safari always includes. We use that to detect it reliably.
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
-  const ua = navigator.userAgent || '';
-  const isAndroid = /Android/i.test(ua);
-  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  var ua = navigator.userAgent || '';
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
 
-  // Known standalone browsers — these are fine, do NOT redirect
-  const isStandaloneBrowser =
-    (isAndroid && /Chrome\/\d/.test(ua) && !/wv\b/.test(ua)) ||  // Chrome (real, not WebView)
-    /SamsungBrowser\/\d/.test(ua) ||   // Samsung Internet
-    /Firefox\/\d/.test(ua) ||          // Firefox
-    /OPR\/\d/.test(ua) ||              // Opera
-    /EdgA\/\d/.test(ua) ||             // Edge (Android)
-    /EdgiOS\/\d/.test(ua) ||           // Edge (iOS)
-    /Brave\//.test(ua) ||              // Brave
-    /DuckDuckGo\//.test(ua) ||         // DuckDuckGo
-    /Vivaldi\//.test(ua);              // Vivaldi
+  var isInAppBrowser = false;
 
-  const isInAppBrowser = !isStandaloneBrowser && (
-    isAndroid ||  // Any Android that isn't a standalone browser above → in-app
-    // iOS explicit in-app signals (social + UPI apps that leak UA tokens)
-    /FBAN|FBAV|Instagram|WhatsApp|Snapchat|TikTok|Twitter|Line\/|MicroMessenger|KAKAOTALK/i.test(ua) ||
-    /PhonePe|Paytm|BHIM|GooglePay|AmazonPay|CredApp|MobiKwik|FreeCharge|JioPay|iMobile|Navi\/|Slice\/|Jupiter\//i.test(ua) ||
-    /WebView/.test(ua)
-  );
+  if (isAndroid) {
+    // Standalone browsers include their own token and do NOT set the wv flag
+    var isStandaloneAndroid =
+      (/Chrome\/\d/.test(ua) && !/wv\b/.test(ua)) ||  // Chrome (real)
+      /SamsungBrowser\/\d/.test(ua) ||
+      /Firefox\/\d/.test(ua) ||
+      /OPR\/\d/.test(ua) ||
+      /EdgA\/\d/.test(ua) ||
+      /Brave\//.test(ua) ||
+      /DuckDuckGo\//.test(ua) ||
+      /Vivaldi\//.test(ua);
+    isInAppBrowser = !isStandaloneAndroid;
+  } else if (isIOS) {
+    // Real Safari always has both "Version/X.X" AND "Safari/" in the UA.
+    // WKWebView (every in-app browser on iOS) has neither — it just says "Mobile/XXXX".
+    var isRealSafari = /Version\/[\d.]+ .*Safari\//.test(ua);
+    // Chrome for iOS identifies itself with CriOS
+    var isChromeiOS = /CriOS\/\d/.test(ua);
+    // Firefox for iOS
+    var isFirefoxiOS = /FxiOS\/\d/.test(ua);
+    // Edge for iOS
+    var isEdgeiOS = /EdgiOS\/\d/.test(ua);
+    isInAppBrowser = !isRealSafari && !isChromeiOS && !isFirefoxiOS && !isEdgeiOS;
+  }
 
   if (isInAppBrowser) {
-    const url = window.location.href;
-    const urlNoScheme = url.replace(/^https?:\/\//, '');
+    var url = window.location.href;
+    var urlNoScheme = url.replace(/^https?:\/\//, '');
 
     if (isAndroid) {
-      // 1st choice: Chrome; if not installed Android falls back to browser chooser
+      // Chrome intent; falls back to system browser chooser if Chrome not installed
       window.location.href =
         'intent://' + urlNoScheme +
         '#Intent;scheme=https;package=com.android.chrome;' +
@@ -54,30 +61,29 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
           'category=android.intent.category.BROWSABLE;end'
         ) + ';end';
     } else {
-      // iOS — try Chrome first (googlechromes:// scheme), fall back to Safari banner
-      function showBrowserBanner(preferChrome) {
+      // iOS: try to open Chrome first; if not installed, show banner for both Chrome & Safari
+      function showIOSBanner() {
         var b = document.createElement('div');
         b.style.cssText =
           'position:fixed;top:0;left:0;right:0;z-index:9999;' +
-          'background:#0d1b3e;color:#d4af5a;padding:14px 16px;' +
+          'background:#0d1b3e;color:#d4af5a;padding:16px;' +
           'font-family:sans-serif;font-size:14px;text-align:center;' +
-          'box-shadow:0 2px 8px rgba(0,0,0,0.5);';
-        var chromeLink = preferChrome
-          ? '<a href="googlechromes://' + urlNoScheme + '" style="color:#fff;font-weight:bold;text-decoration:underline;margin:0 6px;">Open in Chrome ↗</a> &nbsp;|&nbsp;'
-          : '';
+          'box-shadow:0 2px 8px rgba(0,0,0,0.6);line-height:1.8;';
         b.innerHTML =
-          '⚠️ Open in a browser to place your order &nbsp;' +
-          chromeLink +
+          '⚠️ Please open in a browser to place your order<br/>' +
+          '<a href="googlechromes://' + urlNoScheme + '" ' +
+          'style="color:#fff;font-weight:bold;text-decoration:underline;margin:0 10px;">Open in Chrome ↗</a>' +
+          '&nbsp;&nbsp;' +
           '<a href="' + url + '" target="_blank" ' +
-          'style="color:#d4af5a;font-weight:bold;text-decoration:underline;margin:0 6px;">Open in Safari ↗</a>';
+          'style="color:#d4af5a;font-weight:bold;text-decoration:underline;margin:0 10px;">Open in Safari ↗</a>';
         document.body ? document.body.prepend(b) : document.addEventListener('DOMContentLoaded', function () { document.body.prepend(b); });
       }
-      // Try Chrome via URL scheme; if app isn't installed the redirect fails silently
-      // Use a short timer — if the page is still visible after 500ms Chrome wasn't installed
-      var left = true;
-      window.addEventListener('blur', function () { left = false; });
+      // Attempt Chrome first; detect if it opened by listening for page blur
+      var pageLeft = false;
+      window.addEventListener('pagehide', function () { pageLeft = true; });
+      window.addEventListener('blur', function () { pageLeft = true; });
       window.location.href = 'googlechromes://' + urlNoScheme;
-      setTimeout(function () { if (left) showBrowserBanner(true); }, 500);
+      setTimeout(function () { if (!pageLeft) showIOSBanner(); }, 600);
     }
   }
 }
