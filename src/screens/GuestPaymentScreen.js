@@ -39,10 +39,14 @@ export default function GuestPaymentScreen({ navigation, route }) {
         try {
           let rzpOId = null;
           try {
+            console.log('[GuestPaymentScreen] Creating Razorpay order for orderId:', orderId, 'amount:', total);
             const order = await createRazorpayOrder({ amountRupees: total, orderId });
             rzpOId = order.id;
+            console.log('[GuestPaymentScreen] Razorpay order created:', rzpOId, 'status:', order.status);
             if (!cancelled) setRzpOrderId(rzpOId);
-          } catch {}
+          } catch (err) {
+            console.error('[GuestPaymentScreen] Failed to create Razorpay order:', err);
+          }
           if (cancelled) return;
           setState(STATE.AWAITING);
 
@@ -140,14 +144,18 @@ export default function GuestPaymentScreen({ navigation, route }) {
       if (done) return;
       try {
         const status = await fetchRazorpayOrderStatus(rzpOrderId);
+        console.log('[GuestPaymentScreen] Polling - Order status:', status, 'for order:', rzpOrderId);
         if (status === 'paid') {
+          console.log('[GuestPaymentScreen] Polling detected paid status - calling handlePaymentSuccess');
           done = true;
           clearInterval(pollRef.current);
           document.removeEventListener('visibilitychange', onVisible);
           closeRazorpayCheckout();
           handlePaymentSuccess(rzpOrderId);
         }
-      } catch {}
+      } catch (err) {
+        console.error('[GuestPaymentScreen] Polling error:', err);
+      }
     }
 
     function onVisible() {
