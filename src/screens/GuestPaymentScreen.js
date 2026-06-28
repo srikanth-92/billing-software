@@ -62,8 +62,10 @@ export default function GuestPaymentScreen({ navigation, route }) {
             prefill: phone ? { contact: phone } : {},
           })
             .then((payment) => {
-              // handler fires for non-redirect payments (card, wallet, netbanking)
-              if (!cancelled) handlePaymentSuccess(payment.razorpay_payment_id || payment.id);
+              // With redirect mode, this should NEVER fire (Razorpay redirects instead)
+              // This only fires for non-redirect payments (card, wallet, netbanking)
+              // If this is firing with redirect mode, it's a Razorpay bug - ignore it
+              console.warn('Razorpay handler fired unexpectedly with redirect mode - ignoring');
             })
             .catch(() => {});
         } catch (err) {
@@ -163,6 +165,25 @@ export default function GuestPaymentScreen({ navigation, route }) {
   useEffect(() => { return () => clearInterval(pollRef.current); }, []);
 
   async function handlePaymentSuccess(paymentId = 'manual') {
+    console.log('[GuestPaymentScreen] handlePaymentSuccess called with paymentId:', paymentId);
+
+    // CRITICAL: Verify payment before confirming
+    if (rzpOrderId && paymentId !== 'manual') {
+      try {
+        const status = await fetchRazorpayOrderStatus(rzpOrderId);
+        console.log('[GuestPaymentScreen] Payment verification - status:', status);
+
+        if (status !== 'paid') {
+          console.warn('[GuestPaymentScreen] Payment not confirmed, status:', status);
+          // Don't confirm yet - keep waiting for polling to detect 'paid' status
+          return;
+        }
+      } catch (err) {
+        console.error('[GuestPaymentScreen] Payment verification failed:', err);
+        return;
+      }
+    }
+
     setState(STATE.CONFIRMED);
     try {
       // Idempotency — if already saved reuse existing token
