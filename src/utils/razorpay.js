@@ -45,10 +45,15 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
         name: RESTAURANT_NAME,
         description: `Order ${orderId}`,
         ...(razorpayOrderId ? { order_id: razorpayOrderId } : {}),
-        prefill,
-        theme: { color: '#c9a840' },
-        handler: resolve,
-        modal: { ondismiss: () => reject(new Error('dismissed')) },
+        prefill: { contact: '9999999999', email: 'guest@buffet.com', ...prefill },
+        config: { display: { hide: [{ method: 'paylater' }] } },
+        theme: { color: '#c9a840', hide_topbar: false },
+        // CRITICAL: Only set handler when NOT using redirect mode
+        // When redirect:true, Razorpay redirects to callback_url instead of calling handler
+        // If handler is set with redirect:true, it fires BEFORE payment confirmation
+        ...(!callbackUrl ? { handler: resolve } : {}),
+        modal: { ondismiss: () => reject(new Error('dismissed')), escape: true },
+        readonly: { contact: true, email: true },
         ...(callbackUrl ? { callback_url: callbackUrl, redirect: true } : {}),
       };
       _rzpInstance = new window.Razorpay(options);
