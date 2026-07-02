@@ -69,9 +69,18 @@ export default function GuestPaymentScreen({ navigation, route }) {
               // With redirect mode, this should NEVER fire (Razorpay redirects instead)
               // This only fires for non-redirect payments (card, wallet, netbanking)
               // If this is firing with redirect mode, it's a Razorpay bug - ignore it
-              console.warn('Razorpay handler fired unexpectedly with redirect mode - ignoring');
+              console.warn('[GuestPaymentScreen] Razorpay handler fired unexpectedly with redirect mode - ignoring');
             })
-            .catch(() => {});
+            .catch((err) => {
+              // Payment was dismissed/failed
+              console.log('[GuestPaymentScreen] Payment cancelled or failed:', err.message);
+              // Clear pending order from session storage to prevent false confirmation
+              sessionStorage.removeItem('rzp_pending_order');
+              // Go back to menu
+              if (!cancelled) {
+                navigation.goBack();
+              }
+            });
         } catch (err) {
           if (!cancelled) { setErrorMsg(err.message || 'Payment failed'); setState(STATE.ERROR); }
         }

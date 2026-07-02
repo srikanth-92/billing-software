@@ -57,15 +57,34 @@ export default function GuestConfirmScreen({ navigation }) {
           return;
         }
 
+        // CRITICAL: Verify payment was actually completed
+        // Don't generate token if there's no payment ID from Razorpay
+        const resolvedPaymentId = paymentId || rzpParams.razorpay_payment_id;
+
+        if (!resolvedPaymentId) {
+          console.error('[GuestConfirm] No payment ID found - payment was not completed');
+          console.error('[GuestConfirm] URL params:', {
+            paymentId, rzpOrderId,
+            orderId, cartId,
+            allParams: window.location.search
+          });
+          setError('Payment not completed. You may have closed the payment window. Please try ordering again.');
+
+          // Redirect to menu after showing error
+          setTimeout(() => {
+            navigation.replace('GuestMenu', { cartId });
+          }, 5000);
+          return;
+        }
+
+        console.log('[GuestConfirm] Payment verified, ID:', resolvedPaymentId);
+
         // Idempotency check — if order already saved, reuse its token
         const existing = await getExistingOrder(orderId);
         if (existing) {
           setTokenNumber(existing.tokenNumber);
           return;
         }
-
-        const resolvedPaymentId = paymentId || rzpParams.razorpay_payment_id
-          || rzpOrderId || rzpParams.razorpay_order_id || `manual_${Date.now()}`;
 
         const token = await getNextToken(cartId);
         setTokenNumber(token);
