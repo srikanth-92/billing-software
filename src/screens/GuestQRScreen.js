@@ -6,7 +6,8 @@ import QRCodeDisplay from '../components/QRCodeDisplay';
 
 export default function GuestQRScreen({ navigation, route }) {
   const employee = EMPLOYEES.find((e) => e.username === route.params?.employeeUsername) || EMPLOYEES[1];
-  const cartUrl = `${GUEST_ORDER_BASE}/${employee.username}/guest`;
+  // Use redirect page to force opening in Chrome/Safari instead of in-app browsers
+  const cartUrl = `${GUEST_ORDER_BASE}/qr-redirect.html?cart=${employee.username}`;
 
   return (
     <SafeAreaView style={styles.container}>
