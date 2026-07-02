@@ -56,31 +56,59 @@ export default function GuestPaymentScreen({ navigation, route }) {
             orderId, items, subtotal, tax, total, cartId, phone,
           }));
 
-          // Use redirect mode so Razorpay's server triggers the callback_url
-          // navigation even when the browser tab was backgrounded (e.g. user
-          // switched to Paytm). Keep the URL short — no items — they're in sessionStorage.
-          const callbackUrl = `${window.location.origin}/guest-confirm?orderId=${encodeURIComponent(orderId)}&cartId=${encodeURIComponent(cartId)}`;
+          console.log('[GuestPaymentScreen] Opening Razorpay checkout');
 
+          // Use NON-redirect mode (handler mode) - modal stays in same page
+          // This works better in in-app browsers
           openRazorpayCheckout({
-            razorpayOrderId: rzpOId, amountRupees: total, orderId, callbackUrl,
+            razorpayOrderId: rzpOId,
+            amountRupees: total,
+            orderId,
+            callbackUrl: null, // No redirect - use handler mode
             prefill: phone ? { contact: phone } : {},
           })
-            .then((payment) => {
-              // With redirect mode, this should NEVER fire (Razorpay redirects instead)
-              // If this fires, it means non-redirect payment method was used (shouldn't happen)
-              console.warn('[GuestPaymentScreen] Razorpay handler fired unexpectedly with redirect mode');
-              console.warn('[GuestPaymentScreen] Payment data:', payment);
+            .then(async (payment) => {
+              // Payment successful!
+              console.log('[GuestPaymentScreen] Payment successful:', payment);
+              if (cancelled) return;
+
+              setState(STATE.CONFIRMED);
+
+              // Check if already saved
+              const existing = await getExistingOrder(orderId);
+              if (existing) {
+                setTokenNumber(existing.tokenNumber);
+                return;
+              }
+
+              const token = await getNextToken(cartId);
+              setTokenNumber(token);
+
+              await saveOrder({
+                orderId, items, subtotal, tax, total,
+                employeeName: 'Guest (Self-Order)',
+                paymentId: payment.razorpay_payment_id || payment.id,
+                paymentMethod: 'razorpay_checkout',
+                isGuestOrder: true,
+                cartId,
+                tokenNumber: token,
+                printPending: true,
+              });
             })
             .catch((err) => {
-              // In redirect mode, ondismiss is NOT set, so this catch should NEVER fire
-              // If it does fire, it means Razorpay script failed to load or modal failed to open
-              console.error('[GuestPaymentScreen] Razorpay error (should not happen in redirect mode):', err.message);
-              // Only navigate back if this is a real error (not in redirect flow)
-              if (!cancelled && err.message !== 'dismissed') {
-                // Real error - modal failed to open
-                sessionStorage.removeItem('rzp_pending_order');
-                setState(STATE.ERROR);
-                setErrorMsg('Failed to open payment window. Please try again.');
+              // Payment dismissed or failed
+              console.log('[GuestPaymentScreen] Payment cancelled or failed:', err.message);
+              sessionStorage.removeItem('rzp_pending_order');
+
+              if (!cancelled) {
+                if (err.message === 'dismissed') {
+                  // User closed modal - go back to menu
+                  navigation.goBack();
+                } else {
+                  // Real error
+                  setState(STATE.ERROR);
+                  setErrorMsg('Payment failed. Please try again.');
+                }
               }
             });
         } catch (err) {

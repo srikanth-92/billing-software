@@ -67,10 +67,18 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
       // Add a small delay to ensure DOM is ready, then open
       setTimeout(() => {
         try {
+          console.log('[Razorpay] Attempting to open modal with options:', {
+            hasOrderId: !!options.order_id,
+            amount: options.amount,
+            redirect: options.redirect,
+            hasCallbackUrl: !!options.callback_url,
+            hasHandler: !!options.handler,
+            hasOnDismiss: !!options.modal?.ondismiss
+          });
           _rzpInstance.open();
-          console.log('[Razorpay] Modal opened successfully');
+          console.log('[Razorpay] Modal.open() called successfully');
         } catch (err) {
-          console.error('[Razorpay] Failed to open modal:', err);
+          console.error('[Razorpay] Exception when calling .open():', err);
           reject(new Error('Failed to open payment modal'));
         }
       }, 100);
