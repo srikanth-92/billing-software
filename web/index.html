@@ -141,13 +141,21 @@
           document.getElementById('bow-open-btn').addEventListener('click', function () {
             console.log('[InAppGate] User tapped "Open" in banner');
             if (isAndroid) {
+              // Android: Try Chrome intent first, then generic browser
               var noScheme = url.replace(/^https?:\/\//, '');
               window.location.href = 'intent://' + noScheme +
                 '#Intent;scheme=https;action=android.intent.action.VIEW;' +
+                'package=com.android.chrome;' +
                 'category=android.intent.category.BROWSABLE;end';
               setTimeout(function() { window.open(url, '_system'); }, 300);
             } else {
+              // iOS: Try multiple approaches (most will fail, but worth trying)
+              // Try 1: Direct window.open
               window.open(url, '_system');
+              // Try 2: Safari URL scheme (rarely works from WebView)
+              setTimeout(function() {
+                window.location.href = url.replace('https://', 'x-safari-https://');
+              }, 300);
             }
           });
 
