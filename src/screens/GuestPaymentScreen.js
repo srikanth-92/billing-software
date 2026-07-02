@@ -46,6 +46,15 @@ export default function GuestPaymentScreen({ navigation, route }) {
             if (!cancelled) setRzpOrderId(rzpOId);
           } catch (err) {
             console.error('[GuestPaymentScreen] Failed to create Razorpay order:', err);
+            console.error('[GuestPaymentScreen] Error details:', err.message);
+            // If order creation fails, still try to open checkout (will work without order_id in test mode)
+            if (!cancelled) {
+              Alert.alert(
+                'Order Creation Warning',
+                'Could not create Razorpay order. This may be due to API key issues. Contact support if payment fails.',
+                [{ text: 'OK' }]
+              );
+            }
           }
           if (cancelled) return;
           setState(STATE.AWAITING);
@@ -97,7 +106,9 @@ export default function GuestPaymentScreen({ navigation, route }) {
             })
             .catch((err) => {
               // Payment dismissed or failed
-              console.log('[GuestPaymentScreen] Payment cancelled or failed:', err.message);
+              console.error('[GuestPaymentScreen] Payment error:', err);
+              console.error('[GuestPaymentScreen] Error message:', err.message);
+              console.error('[GuestPaymentScreen] Error stack:', err.stack);
               sessionStorage.removeItem('rzp_pending_order');
 
               if (!cancelled) {
@@ -105,9 +116,15 @@ export default function GuestPaymentScreen({ navigation, route }) {
                   // User closed modal - go back to menu
                   navigation.goBack();
                 } else {
-                  // Real error
+                  // Real error - could be Razorpay configuration issue
                   setState(STATE.ERROR);
-                  setErrorMsg('Payment failed. Please try again.');
+                  const errorDetails = err.message || 'Payment failed';
+                  setErrorMsg(
+                    'Payment could not be processed. ' +
+                    'This may be due to Razorpay account setup. ' +
+                    'Please contact support.\n\n' +
+                    `Error: ${errorDetails}`
+                  );
                 }
               }
             });

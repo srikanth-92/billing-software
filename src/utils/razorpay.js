@@ -13,6 +13,8 @@ function authHeader() {
  * Returns the full order object including { id, amount, currency }.
  */
 export async function createRazorpayOrder({ amountRupees, orderId }) {
+  console.log('[Razorpay] Creating order:', { amount: amountRupees, orderId });
+
   const res = await fetch(`${BASE}/orders`, {
     method: 'POST',
     headers: authHeader(),
@@ -22,11 +24,18 @@ export async function createRazorpayOrder({ amountRupees, orderId }) {
       receipt: orderId,
     }),
   });
+
+  console.log('[Razorpay] Order API response status:', res.status);
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.description || `Razorpay error ${res.status}`);
+    console.error('[Razorpay] Order creation failed:', err);
+    throw new Error(err?.error?.description || `Razorpay API error ${res.status}: ${err?.error?.code || 'Unknown'}`);
   }
-  return res.json();
+
+  const order = await res.json();
+  console.log('[Razorpay] Order created successfully:', order);
+  return order;
 }
 
 let _rzpInstance = null;
