@@ -317,7 +317,11 @@ export default function GuestPaymentScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: THEME.offWhite, ...(Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' } : {}) },
+  container: {
+    flex: 1,
+    backgroundColor: THEME.offWhite,
+    // Remove position:fixed on web to prevent blocking Razorpay modal
+  },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 14,

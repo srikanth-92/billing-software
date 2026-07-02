@@ -22,6 +22,16 @@
         overflow: hidden;
         max-width: 100vw;
       }
+      /* Ensure Razorpay modal appears on top with proper visibility */
+      .razorpay-container {
+        position: fixed !important;
+        z-index: 999999 !important;
+        overflow: auto !important;
+      }
+      iframe[name="razorpay-checkout-frame"] {
+        position: fixed !important;
+        z-index: 999999 !important;
+      }
     </style>
     <link rel="icon" href="/favicon.ico" />
     <!-- Capture Razorpay redirect params into sessionStorage before React

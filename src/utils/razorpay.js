@@ -52,12 +52,26 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
         // When redirect:true, Razorpay redirects to callback_url instead of calling handler
         // If handler is set with redirect:true, it fires BEFORE payment confirmation
         ...(!callbackUrl ? { handler: resolve } : {}),
-        modal: { ondismiss: () => reject(new Error('dismissed')), escape: true },
+        modal: {
+          ondismiss: () => reject(new Error('dismissed')),
+          escape: true,
+          backdropclose: false, // Prevent accidental closure
+        },
         readonly: { contact: true, email: true },
         ...(callbackUrl ? { callback_url: callbackUrl, redirect: true } : {}),
       };
       _rzpInstance = new window.Razorpay(options);
-      _rzpInstance.open();
+
+      // Add a small delay to ensure DOM is ready, then open
+      setTimeout(() => {
+        try {
+          _rzpInstance.open();
+          console.log('[Razorpay] Modal opened successfully');
+        } catch (err) {
+          console.error('[Razorpay] Failed to open modal:', err);
+          reject(new Error('Failed to open payment modal'));
+        }
+      }, 100);
     }
 
     if (window.Razorpay) {

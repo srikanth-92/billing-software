@@ -88,6 +88,10 @@ export default function PaymentScreen({ navigation, route }) {
           }
 
           if (cancelled) return;
+
+          // Open the checkout modal - this will show the actual Razorpay UI
+          // State changes to AWAITING only when modal is about to open
+          console.log('[PaymentScreen] Opening Razorpay checkout modal');
           setState(STATE.AWAITING);
 
           const payment = await openRazorpayCheckout({
@@ -97,6 +101,7 @@ export default function PaymentScreen({ navigation, route }) {
           });
 
           if (cancelled) return;
+          console.log('[PaymentScreen] Payment successful:', payment);
           setCapturedPayment(payment);
           setState(STATE.CONFIRMED);
           try {
@@ -331,7 +336,12 @@ export default function PaymentScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: THEME.offWhite, ...(Platform.OS === 'web' ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' } : {}) },
+  container: {
+    flex: 1,
+    backgroundColor: THEME.offWhite,
+    // Remove position:fixed on web to prevent blocking Razorpay modal
+    // Razorpay modal needs higher z-index and its own fixed positioning
+  },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: THEME.navy, paddingHorizontal: 16, paddingVertical: 14,
