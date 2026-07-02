@@ -67,18 +67,20 @@ export default function GuestPaymentScreen({ navigation, route }) {
           })
             .then((payment) => {
               // With redirect mode, this should NEVER fire (Razorpay redirects instead)
-              // This only fires for non-redirect payments (card, wallet, netbanking)
-              // If this is firing with redirect mode, it's a Razorpay bug - ignore it
-              console.warn('[GuestPaymentScreen] Razorpay handler fired unexpectedly with redirect mode - ignoring');
+              // If this fires, it means non-redirect payment method was used (shouldn't happen)
+              console.warn('[GuestPaymentScreen] Razorpay handler fired unexpectedly with redirect mode');
+              console.warn('[GuestPaymentScreen] Payment data:', payment);
             })
             .catch((err) => {
-              // Payment was dismissed/failed
-              console.log('[GuestPaymentScreen] Payment cancelled or failed:', err.message);
-              // Clear pending order from session storage to prevent false confirmation
-              sessionStorage.removeItem('rzp_pending_order');
-              // Go back to menu
-              if (!cancelled) {
-                navigation.goBack();
+              // In redirect mode, ondismiss is NOT set, so this catch should NEVER fire
+              // If it does fire, it means Razorpay script failed to load or modal failed to open
+              console.error('[GuestPaymentScreen] Razorpay error (should not happen in redirect mode):', err.message);
+              // Only navigate back if this is a real error (not in redirect flow)
+              if (!cancelled && err.message !== 'dismissed') {
+                // Real error - modal failed to open
+                sessionStorage.removeItem('rzp_pending_order');
+                setState(STATE.ERROR);
+                setErrorMsg('Failed to open payment window. Please try again.');
               }
             });
         } catch (err) {

@@ -53,7 +53,9 @@ export function openRazorpayCheckout({ razorpayOrderId, amountRupees, orderId, p
         // If handler is set with redirect:true, it fires BEFORE payment confirmation
         ...(!callbackUrl ? { handler: resolve } : {}),
         modal: {
-          ondismiss: () => reject(new Error('dismissed')),
+          // CRITICAL: In redirect mode, ondismiss fires when redirecting (not actual dismissal)
+          // Only reject on dismiss when NOT using redirect mode
+          ...(!callbackUrl ? { ondismiss: () => reject(new Error('dismissed')) } : {}),
           escape: true,
           backdropclose: false, // Prevent accidental closure
         },
