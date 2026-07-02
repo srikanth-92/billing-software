@@ -67,7 +67,7 @@
       // Get the target URL from query parameter
       const params = new URLSearchParams(window.location.search);
       const cart = params.get('cart') || 'cart1';
-      const targetUrl = 'https://buffet-on-wheels-ba58b.web.app/GuestQR?employeeUsername=' + cart;
+      const targetUrl = 'https://buffet-on-wheels-ba58b.web.app/' + cart + '/guest';
 
       const ua = navigator.userAgent || '';
       const isAndroid = /Android/i.test(ua);
@@ -87,15 +87,24 @@
       }
 
       if (isAndroid) {
-        // Android: use Chrome intent
+        // Android: try multiple redirect strategies
         const noScheme = targetUrl.replace(/^https?:\/\//, '');
+
+        // Strategy 1: Chrome intent with VIEW action
         const intentUrl = 'intent://' + noScheme +
-          '#Intent;scheme=https;package=com.android.chrome;' +
+          '#Intent;scheme=https;action=android.intent.action.VIEW;' +
+          'package=com.android.chrome;' +
           'S.browser_fallback_url=' + encodeURIComponent(targetUrl) + ';end';
 
         console.log('[QR Redirect] Trying Chrome intent:', intentUrl);
         window.location.href = intentUrl;
         redirected = true;
+
+        // Strategy 2: Try direct redirect after 500ms as backup
+        setTimeout(function() {
+          console.log('[QR Redirect] Trying direct window.open fallback');
+          window.open(targetUrl, '_blank');
+        }, 500);
 
         // Show manual button after 2 seconds if still on this page
         setTimeout(function() {
@@ -119,16 +128,48 @@
 
       document.getElementById('manual-btn').addEventListener('click', function() {
         console.log('[QR Redirect] Manual button clicked');
+
         if (isAndroid) {
-          // Try intent one more time
+          // Android: Try multiple strategies in sequence
           const noScheme = targetUrl.replace(/^https?:\/\//, '');
+
+          // Try 1: Chrome intent with BROWSABLE category
           window.location.href = 'intent://' + noScheme +
-            '#Intent;scheme=https;package=com.android.chrome;end';
+            '#Intent;scheme=https;action=android.intent.action.VIEW;' +
+            'category=android.intent.category.BROWSABLE;' +
+            'package=com.android.chrome;end';
+
+          // Try 2: Generic browser intent (any browser)
           setTimeout(function() {
-            window.open(targetUrl, '_blank');
+            window.location.href = 'intent://' + noScheme +
+              '#Intent;scheme=https;action=android.intent.action.VIEW;end';
           }, 300);
+
+          // Try 3: Direct window.open
+          setTimeout(function() {
+            window.open(targetUrl, '_system');
+          }, 600);
+
+          // Try 4: window.location as last resort
+          setTimeout(function() {
+            window.location.href = targetUrl;
+          }, 900);
         } else {
-          window.open(targetUrl, '_blank');
+          // iOS: Try multiple methods
+          // Try 1: window.open with _blank
+          const opened = window.open(targetUrl, '_blank');
+
+          // Try 2: If popup blocked, try _system
+          setTimeout(function() {
+            if (!opened) {
+              window.open(targetUrl, '_system');
+            }
+          }, 300);
+
+          // Try 3: Direct navigation as fallback
+          setTimeout(function() {
+            window.location.href = targetUrl;
+          }, 600);
         }
       });
     })();
