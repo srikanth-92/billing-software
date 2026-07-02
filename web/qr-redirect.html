@@ -57,10 +57,9 @@
 <body>
   <div class="emoji">🍽️</div>
   <h1>Buffet on Wheels</h1>
-  <p>Opening in your browser...</p>
+  <p>Redirecting to menu...</p>
   <div class="spinner"></div>
-  <button class="btn" id="manual-btn" style="display:none;">Open Manually</button>
-  <p class="hint" id="hint"></p>
+  <p class="hint">If you're not redirected automatically, <a href="#" id="manual-link" style="color:#c9a84c;text-decoration:underline;">click here</a></p>
 
   <script>
     (function() {
@@ -77,100 +76,17 @@
       console.log('[QR Redirect] UA:', ua);
       console.log('[QR Redirect] Platform:', isAndroid ? 'Android' : isIOS ? 'iOS' : 'Other');
 
-      let redirected = false;
+      // Just redirect directly - the main app will show the banner if needed
+      console.log('[QR Redirect] Direct redirect to:', targetUrl);
 
-      function showManualButton() {
-        document.getElementById('manual-btn').style.display = 'block';
-        document.getElementById('hint').textContent = isAndroid
-          ? 'Auto-redirect didn\'t work. Tap "Open Manually" to continue.'
-          : 'Tap "Open Manually" then choose Safari from the menu.';
-      }
+      // Redirect immediately
+      window.location.href = targetUrl;
 
-      if (isAndroid) {
-        // Android: try multiple redirect strategies
-        const noScheme = targetUrl.replace(/^https?:\/\//, '');
-
-        // Strategy 1: Chrome intent with VIEW action
-        const intentUrl = 'intent://' + noScheme +
-          '#Intent;scheme=https;action=android.intent.action.VIEW;' +
-          'package=com.android.chrome;' +
-          'S.browser_fallback_url=' + encodeURIComponent(targetUrl) + ';end';
-
-        console.log('[QR Redirect] Trying Chrome intent:', intentUrl);
-        window.location.href = intentUrl;
-        redirected = true;
-
-        // Strategy 2: Try direct redirect after 500ms as backup
-        setTimeout(function() {
-          console.log('[QR Redirect] Trying direct window.open fallback');
-          window.open(targetUrl, '_blank');
-        }, 500);
-
-        // Show manual button after 2 seconds if still on this page
-        setTimeout(function() {
-          if (window.location.href.indexOf('qr-redirect.html') !== -1) {
-            console.log('[QR Redirect] Still on redirect page, showing manual option');
-            showManualButton();
-          }
-        }, 2000);
-      } else if (isIOS) {
-        // iOS: can't auto-redirect from WebView, must use user tap
-        console.log('[QR Redirect] iOS detected, showing manual button immediately');
-        document.querySelector('.spinner').style.display = 'none';
-        document.querySelector('p').textContent = 'Please tap the button below to continue:';
-        showManualButton();
-      } else {
-        // Desktop or other: direct redirect
-        console.log('[QR Redirect] Direct redirect');
+      // Manual link as backup
+      document.getElementById('manual-link').addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('[QR Redirect] Manual link clicked');
         window.location.href = targetUrl;
-        redirected = true;
-      }
-
-      document.getElementById('manual-btn').addEventListener('click', function() {
-        console.log('[QR Redirect] Manual button clicked');
-
-        if (isAndroid) {
-          // Android: Try multiple strategies in sequence
-          const noScheme = targetUrl.replace(/^https?:\/\//, '');
-
-          // Try 1: Chrome intent with BROWSABLE category
-          window.location.href = 'intent://' + noScheme +
-            '#Intent;scheme=https;action=android.intent.action.VIEW;' +
-            'category=android.intent.category.BROWSABLE;' +
-            'package=com.android.chrome;end';
-
-          // Try 2: Generic browser intent (any browser)
-          setTimeout(function() {
-            window.location.href = 'intent://' + noScheme +
-              '#Intent;scheme=https;action=android.intent.action.VIEW;end';
-          }, 300);
-
-          // Try 3: Direct window.open
-          setTimeout(function() {
-            window.open(targetUrl, '_system');
-          }, 600);
-
-          // Try 4: window.location as last resort
-          setTimeout(function() {
-            window.location.href = targetUrl;
-          }, 900);
-        } else {
-          // iOS: Try multiple methods
-          // Try 1: window.open with _blank
-          const opened = window.open(targetUrl, '_blank');
-
-          // Try 2: If popup blocked, try _system
-          setTimeout(function() {
-            if (!opened) {
-              window.open(targetUrl, '_system');
-            }
-          }, 300);
-
-          // Try 3: Direct navigation as fallback
-          setTimeout(function() {
-            window.location.href = targetUrl;
-          }, 600);
-        }
       });
     })();
   </script>
