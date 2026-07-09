@@ -9,32 +9,19 @@ import { generateOrderId, formatCurrency } from '../utils/razorpay';
 import { loadWeeklyMenu, subscribeCartOverrides } from '../utils/storage';
 
 
-const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner'];
+const CATEGORIES = ['Menu'];
 const CATEGORY_TIMES = {
-  Breakfast: '7:00–10:00 AM',
-  Lunch:     '12:30–2:30 PM',
-  Dinner:    '7:30–10:30 PM',
+  Menu: 'All Day',
 };
 const CATEGORY_META = {
-  Breakfast: { emoji: '🌅', color: '#ea580c', bg: '#fff7ed' },
-  Lunch:     { emoji: '☀️',  color: '#ca8a04', bg: '#fefce8' },
-  Dinner:    { emoji: '🌙', color: '#4f46e5', bg: '#eef2ff' },
-  Beverages: { emoji: '☕', color: '#0891b2', bg: '#ecfeff' },
+  Menu: { emoji: '🍽️', color: '#ea580c', bg: '#fff7ed' },
 };
-
-function getMealTab() {
-  const mins = new Date().getHours() * 60 + new Date().getMinutes();
-  if (mins >= 7 * 60 && mins < 10 * 60) return 'Breakfast';
-  if (mins >= 12 * 60 + 30 && mins < 14 * 60) return 'Lunch';
-  if (mins >= 19 * 60 && mins < 22 * 60) return 'Dinner';
-  return 'Breakfast';
-}
 
 export default function GuestMenuScreen({ navigation, route }) {
   const [menuData, setMenuData] = useState(null);
   const [disabledItems, setDisabledItems] = useState(new Set());
   const [cart, setCart] = useState({});
-  const [activeTab, setActiveTab] = useState(getMealTab);
+  const [activeTab, setActiveTab] = useState('Menu');
   const cartId = route?.params?.cartId || 'cart1';
 
   useEffect(() => {

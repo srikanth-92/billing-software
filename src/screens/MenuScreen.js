@@ -14,17 +14,12 @@ import {
 } from '../utils/storage';
 import { printBill } from '../utils/bill';
 
-const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner'];
+const CATEGORIES = ['Menu'];
 const CATEGORY_TIMES = {
-  Breakfast: '7:00–10:00 AM',
-  Lunch:     '12:30–2:30 PM',
-  Dinner:    '7:30–10:30 PM',
+  Menu: 'All Day',
 };
 const CATEGORY_META = {
-  Breakfast: { emoji: '🌅', color: '#ea580c', bg: '#fff7ed' },
-  Lunch:     { emoji: '☀️',  color: '#ca8a04', bg: '#fefce8' },
-  Dinner:    { emoji: '🌙', color: '#4f46e5', bg: '#eef2ff' },
-  Beverages: { emoji: '☕', color: '#0891b2', bg: '#ecfeff' },
+  Menu: { emoji: '🍽️', color: '#ea580c', bg: '#fff7ed' },
 };
 
 const TABS = ['Orders', 'Stock'];
@@ -265,10 +260,10 @@ export default function MenuScreen({ navigation, route }) {
           <Text style={styles.headerSub}>Logged in as {employee.name}</Text>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => navigation.navigate('GuestQR', { employeeUsername: employee.username })} style={styles.headerBtn}>
+          <TouchableOpacity onPress={() => navigation.navigate('GuestQR')} style={styles.headerBtn}>
             <Text style={styles.headerBtnText}>Guest QR</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Sales', { employeeUsername: employee.username })} style={styles.headerBtn}>
+          <TouchableOpacity onPress={() => navigation.navigate('Sales')} style={styles.headerBtn}>
             <Text style={styles.headerBtnText}>Sales</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
