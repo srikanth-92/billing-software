@@ -429,7 +429,7 @@ export const JUNE_MENU = [
 ];
 
 // Sundays (closed)
-export const JUNE_SUNDAYS = ['2026-06-07','2026-06-14','2026-06-21','2026-06-28'];
+export const JUNE_SUNDAYS = []; // Now open on Sundays
 
 // Quick lookup by dateKey
 export const JUNE_MENU_MAP = Object.fromEntries(JUNE_MENU.map((d) => [d.dateKey, d]));

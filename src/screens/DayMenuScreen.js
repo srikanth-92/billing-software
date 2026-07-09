@@ -158,11 +158,7 @@ function Calendar({ selectedKey, onSelect }) {
       <View style={styles.calLegend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: THEME.navy }]} />
-          <Text style={styles.legendText}>Open day</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
-          <Text style={styles.legendText}>Sunday (closed)</Text>
+          <Text style={styles.legendText}>Open day (including Sundays)</Text>
         </View>
       </View>
     </View>
