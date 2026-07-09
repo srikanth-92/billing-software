@@ -10,7 +10,7 @@ import { JUNE_MENU, JUNE_MENU_MAP, JUNE_SUNDAYS } from '../constants/juneMenu';
 const JUNE_DAYS = 30;
 const JUNE_START_DOW = 1; // June 1, 2026 is a Monday (0=Sun)
 const DAY_LABELS = ['S','M','T','W','T','F','S'];
-const MEAL_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
+const MEAL_CATEGORIES = ['Menu'];
 
 const COURSE_COLORS = {
   'Welcome ♦':    { bg: '#FCE4EC', text: '#880E4F' },
@@ -42,10 +42,7 @@ const MEAL_HEADER = {
 };
 
 const CATEGORY_META = {
-  Breakfast: { emoji: '🌅', color: '#ea580c', bg: '#fff7ed' },
-  Lunch:     { emoji: '☀️',  color: '#ca8a04', bg: '#fefce8' },
-  Dinner:    { emoji: '🌙', color: '#4f46e5', bg: '#eef2ff' },
-  Beverages: { emoji: '☕', color: '#0891b2', bg: '#ecfeff' },
+  Menu: { emoji: '🍽️', color: '#ea580c', bg: '#fff7ed' },
 };
 
 function courseStyle(course) {

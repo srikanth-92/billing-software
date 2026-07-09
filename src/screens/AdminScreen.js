@@ -5,31 +5,23 @@ import {
 } from 'react-native';
 import { useLayout } from '../utils/dimensions';
 import { MENU_ITEMS, RESTAURANT_NAME, EMPLOYEES } from '../constants';
-import { clearSession } from '../utils/session';
+import { clearSession, loadSession } from '../utils/session';
 import { saveWeeklyMenu, loadWeeklyMenu, loadOrdersForDays, lastNDays, loadAllCartOverrides, saveCartOverrides } from '../utils/storage';
 import { formatCurrency } from '../utils/razorpay';
 import { THEME } from '../constants/theme';
 import DayMenuScreen from './DayMenuScreen';
 
-const MEAL_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
+const MEAL_CATEGORIES = ['Menu'];
 const TABS = ["Day's Menu", 'Staff Preview', 'Cart Stock', 'Vendor Dashboard'];
 const VENDORS = ['cart1', 'cart2', 'cart3', 'cart4', 'cart5'];
 
 const CATEGORY_META = {
-  Breakfast: { emoji: '🌅', color: '#ea580c', bg: '#fff7ed' },
-  Lunch:     { emoji: '☀️',  color: '#ca8a04', bg: '#fefce8' },
-  Dinner:    { emoji: '🌙', color: '#4f46e5', bg: '#eef2ff' },
-  Beverages: { emoji: '☕', color: '#0891b2', bg: '#ecfeff' },
+  Menu: { emoji: '🍽️', color: '#ea580c', bg: '#fff7ed' },
 };
-const ALL_CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
+const ALL_CATEGORIES = ['Menu'];
 
 function getMealTabForTime() {
-  const now = new Date();
-  const mins = now.getHours() * 60 + now.getMinutes();
-  if (mins >= 7 * 60 && mins < 10 * 60) return 'Breakfast';
-  if (mins >= 12 * 60 + 30 && mins < 14 * 60) return 'Lunch';
-  if (mins >= 19 * 60 && mins < 22 * 60) return 'Dinner';
-  return 'Breakfast';
+  return 'Menu';
 }
 
 function seedMenuFromConstants() {
@@ -53,7 +45,8 @@ function formatDate(dateStr) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AdminScreen({ navigation, route }) {
-  const employee = EMPLOYEES.find((e) => e.username === route.params?.employeeUsername) || EMPLOYEES[0];
+  const session = loadSession();
+  const employee = EMPLOYEES.find((e) => e.username === session?.username) || EMPLOYEES[0];
   const [activeTab, setActiveTab] = useState("Day's Menu");
   const [refreshKey, setRefreshKey] = useState(0);
 
