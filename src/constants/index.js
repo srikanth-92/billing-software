@@ -18,16 +18,28 @@ export const MENU_ITEMS = [
   { id: 'b6', name: 'Coffee',                  emoji: '☕', price: 15, category: 'Menu', description: 'South Indian filter coffee with frothy milk' },
   { id: 'b7', name: 'Badam Milk',              emoji: '🥛', price: 25, category: 'Menu', description: 'Creamy almond milk with saffron' },
 
-  // ── Main Menu Items ──────────────────────────────────────────────────────────────
-  { id: 'l1', name: 'Roti Combo',      emoji: '🫓', price: 99,  category: 'Menu', description: '4 Roti · Paneer Sabzi (1 bowl) · Dry Sabzi (1 bowl)' },
-  { id: 'l2', name: 'Rice Combo',      emoji: '🍚', price: 99,  category: 'Menu', description: 'Rice of the Day (Jeera Rice / Pulao / Biryani) · Dal (1 bowl) · Dry Sabzi (1 bowl)' },
-  { id: 'l3', name: 'Mini Thali',      emoji: '🍽️', price: 149, category: 'Menu', description: '2 Chapati · Rice of the Day · Dal · Dry Sabzi · Salad · Papad' },
-  { id: 'l4', name: 'Thali',           emoji: '🍛', price: 199, category: 'Menu', description: '3 Chapati · Rice of the Day · Dal · Paneer Sabzi · Dry Sabzi · Salad · Papad · Pickle' },
-  { id: 'l5', name: 'Supreme Thali',   emoji: '👑', price: 249, category: 'Menu', description: '3 Chapati · Rice of the Day · Dal · Paneer Sabzi · Dry Sabzi · Starter · Sweet · Salad · Papad · Pickle' },
-  { id: 'l6', name: 'Buffet',          emoji: '🥘', price: 299, category: 'Menu', description: 'Welcome Drink · Soup · Starter · 2 Gravies · Dal · Rice · Chapati · Salad · Sweet · Papad · Pickle · Raita' },
-  { id: 'l7', name: 'Sweet of the Day',    emoji: '🍮', price: 40, category: 'Menu', description: 'Dessert of the day — Gulab Jamun / Kheer / Halwa etc.' },
-  { id: 'l8', name: 'Mocktail of the Day', emoji: '🥤', price: 40, category: 'Menu', description: 'Chilled mocktail, flavour of the day' },
-  { id: 'l9', name: 'Water Bottle',        emoji: '💧', price: 6,  category: 'Menu', description: '200 ml mineral water' },
+  // ── Veg Thalis ──────────────────────────────────────────────────────────────────
+  { id: 't1', name: 'Veg Roti Thali',      emoji: '🫓', price: 129, category: 'Menu', description: '3 Roti · Dal · Paneer Sabzi · Dry Sabzi · Papad · Salad · Raita · Pickle' },
+  { id: 't2', name: 'Veg Rice Thali',      emoji: '🍚', price: 129, category: 'Menu', description: 'Rice · Dal · Paneer Sabzi · Dry Sabzi · Salad · Raita · Pickle' },
+  { id: 't3', name: 'Veg Combo Thali',     emoji: '🍽️', price: 159, category: 'Menu', description: '2 Roti · Half Rice · Dal · Paneer Sabzi · Dry Sabzi · Salad · Raita · Pickle' },
+
+  // ── Non-Veg Thalis ──────────────────────────────────────────────────────────────
+  { id: 't4', name: 'Non-Veg Roti Thali',  emoji: '🍗', price: 149, category: 'Menu', description: '3 Roti · Dal · Chicken Sabzi · Dry Sabzi · Papad · Salad · Raita · Pickle' },
+  { id: 't5', name: 'Non-Veg Rice Thali',  emoji: '🍛', price: 149, category: 'Menu', description: 'Rice · Dal · Chicken Sabzi · Salad · Raita · Pickle' },
+  { id: 't6', name: 'Non-Veg Combo Thali', emoji: '👑', price: 179, category: 'Menu', description: '2 Roti · Half Rice · Dal · Chicken Sabzi · Dry Sabzi · Salad · Raita · Pickle' },
+
+  // ── À La Carte ──────────────────────────────────────────────────────────────────
+  { id: 'a1', name: 'Paneer Sabzi (Half)',    emoji: '🧈', price: 95,  category: 'Menu', description: '4 pieces paneer in gravy' },
+  { id: 'a2', name: 'Paneer Sabzi (Full)',    emoji: '🧈', price: 180, category: 'Menu', description: '8 pieces paneer in gravy' },
+  { id: 'a3', name: 'Chicken Sabzi (Half)',   emoji: '🍗', price: 100, category: 'Menu', description: '3 pieces chicken in gravy' },
+  { id: 'a4', name: 'Chicken Sabzi (Full)',   emoji: '🍗', price: 190, category: 'Menu', description: '6 pieces chicken in gravy' },
+  { id: 'a5', name: 'Rice (Full Portion)',    emoji: '🍚', price: 100, category: 'Menu', description: 'Steamed basmati rice' },
+  { id: 'a6', name: 'Roti (Single)',          emoji: '🫓', price: 20,  category: 'Menu', description: 'Freshly made wheat roti' },
+
+  // ── Extras ──────────────────────────────────────────────────────────────────────
+  { id: 'e1', name: 'Sweet of the Day',    emoji: '🍮', price: 40, category: 'Menu', description: 'Dessert — Gulab Jamun / Kheer / Halwa' },
+  { id: 'e2', name: 'Mocktail of the Day', emoji: '🥤', price: 40, category: 'Menu', description: 'Chilled mocktail, flavour of the day' },
+  { id: 'e3', name: 'Water Bottle',        emoji: '💧', price: 6,  category: 'Menu', description: '200 ml mineral water' },
 ];
 
 // Razorpay configuration
