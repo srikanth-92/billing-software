@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   SafeAreaView, ActivityIndicator, Alert, Platform,
 } from 'react-native';
-import { MENU_ITEMS, RESTAURANT_NAME, RESTAURANT_GSTIN } from '../constants';
+import { MENU_ITEMS, RESTAURANT_NAME, RESTAURANT_GSTIN, isClosedOn } from '../constants';
 import { THEME } from '../constants/theme';
 import { generateOrderId, formatCurrency } from '../utils/razorpay';
 import { loadWeeklyMenu, subscribeCartOverrides } from '../utils/storage';
@@ -69,6 +69,28 @@ export default function GuestMenuScreen({ navigation, route }) {
       phone: '',
     });
   }
+
+  if (isClosedOn()) return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{RESTAURANT_NAME}</Text>
+        <Text style={styles.headerSub}>Self-Order Menu</Text>
+      </View>
+      <View style={styles.closedCard}>
+        <Text style={styles.closedEmoji}>🔒</Text>
+        <Text style={styles.closedTitle}>Closed on Mondays</Text>
+        <Text style={styles.closedSub}>
+          We're closed today and can't take orders. Please visit us any other day of the week — see you soon!
+        </Text>
+        <TouchableOpacity
+          style={styles.cateringBanner}
+          onPress={() => navigation.navigate('CateringOrder')}
+        >
+          <Text style={styles.cateringBannerText}>🍽️ Catering &amp; Banquet Orders — Tap to Enquire</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
 
   if (!menuData) return (
     <SafeAreaView style={styles.container}>
@@ -226,6 +248,15 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cateringBannerText: { color: THEME.navy, fontWeight: '700', fontSize: 13, textAlign: 'center' },
+
+  closedCard: {
+    margin: 24, marginTop: 48, padding: 28, borderRadius: 16,
+    backgroundColor: '#fff', alignItems: 'center',
+    borderWidth: 1, borderColor: '#FECACA',
+  },
+  closedEmoji: { fontSize: 48, marginBottom: 12 },
+  closedTitle: { fontSize: 22, fontWeight: '800', color: '#B91C1C', marginBottom: 8, textAlign: 'center' },
+  closedSub: { fontSize: 15, color: THEME.slate, textAlign: 'center', lineHeight: 22 },
 
   content: { paddingBottom: 120 },
   tabBar: { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
