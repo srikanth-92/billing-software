@@ -1,5 +1,5 @@
 import {
-  collection, doc, setDoc, getDoc, getDocs, updateDoc,
+  collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc,
   query, where, runTransaction, onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -206,6 +206,82 @@ export function subscribeCartOverrides(cartId, cb) {
     (snap) => cb(snap.exists() ? (snap.data()[cartId] || []) : []),
     (err) => console.warn('subscribeCartOverrides error:', err.message)
   );
+}
+
+// ── Daily sales log (manual counter entries) ─────────────────────────────────
+// Firestore path: dailySales/{saleId}
+// Each document is one line-item sale entered by staff for a cart, with a timestamp.
+
+export async function saveDailySale(sale) {
+  const ref = doc(collection(db, 'dailySales'));
+  await setDoc(ref, {
+    ...sale,
+    saleId: ref.id,
+    dateStr: todayDateStr(),
+    savedAt: new Date().toISOString(),
+  });
+  return ref.id;
+}
+
+export async function updateDailySale(saleId, sale) {
+  await updateDoc(doc(db, 'dailySales', saleId), { ...sale });
+}
+
+export async function deleteDailySale(saleId) {
+  await deleteDoc(doc(db, 'dailySales', saleId));
+}
+
+export async function loadDailySalesByDate(dateStr) {
+  try {
+    const q = query(
+      collection(db, 'dailySales'),
+      where('dateStr', '==', dateStr)
+    );
+    const snap = await getDocs(q);
+    const docs = snap.docs.map((d) => d.data());
+    return docs.sort((a, b) => (b.savedAt > a.savedAt ? 1 : -1));
+  } catch (e) {
+    console.warn('loadDailySalesByDate failed:', e.code, e.message);
+    return [];
+  }
+}
+
+// Real-time listener for today's daily sales — calls cb(sales[]) on every change
+export function subscribeTodayDailySales(cb) {
+  const q = query(
+    collection(db, 'dailySales'),
+    where('dateStr', '==', todayDateStr())
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      const docs = snap.docs.map((d) => d.data());
+      cb(docs.sort((a, b) => (b.savedAt > a.savedAt ? 1 : -1)));
+    },
+    (err) => console.warn('subscribeTodayDailySales error:', err.code, err.message)
+  );
+}
+
+// Returns { [dateStr]: sale[] } for all dates in [fromDateStr, toDateStr]
+export async function loadDailySalesForRange(fromDateStr, toDateStr) {
+  try {
+    const q = query(
+      collection(db, 'dailySales'),
+      where('dateStr', '>=', fromDateStr),
+      where('dateStr', '<=', toDateStr)
+    );
+    const snap = await getDocs(q);
+    const byDate = {};
+    snap.docs.forEach((d) => {
+      const s = d.data();
+      if (!byDate[s.dateStr]) byDate[s.dateStr] = [];
+      byDate[s.dateStr].push(s);
+    });
+    return byDate;
+  } catch (e) {
+    console.warn('loadDailySalesForRange failed:', e.code, e.message);
+    return {};
+  }
 }
 
 // ── Weekly menu ───────────────────────────────────────────────────────────────

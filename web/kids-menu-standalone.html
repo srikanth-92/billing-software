@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Friday Fun Fest - Menu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #DC143C 0%, #FF6347 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(220, 20, 60, 0.4);
+        }
+
+        h1 {
+            font-size: 3.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.4em;
+            opacity: 0.95;
+        }
+
+        .menu-section {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .section-title {
+            font-size: 2.2em;
+            color: #DC143C;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .combo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .combo-card {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            padding: 25px;
+            border-radius: 20px;
+            border: 4px solid #DC143C;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .combo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(220, 20, 60, 0.4);
+        }
+
+        .combo-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .emoji {
+            font-size: 2.8em;
+            margin-right: 15px;
+        }
+
+        .combo-info {
+            flex: 1;
+        }
+
+        .combo-name {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #8B0000;
+            margin-bottom: 5px;
+        }
+
+        .combo-price {
+            font-size: 1.5em;
+            color: #DC143C;
+            font-weight: 700;
+        }
+
+        .combo-description {
+            color: #654321;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .combo-items {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .combo-item {
+            padding: 5px 0;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .allergen-info {
+            font-size: 0.85em;
+            color: #FF8C00;
+            font-style: italic;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        footer {
+            background: #DC143C;
+            color: white;
+            padding: 35px;
+            border-radius: 25px;
+            text-align: center;
+            margin-top: 30px;
+            box-shadow: 0 5px 20px rgba(220, 20, 60, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2em;
+            }
+            .combo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍔 Kids Fun Fest 🍟</h1>
+            <p class="subtitle">Friday, July 18, 2026 | 04:30 PM - 9:30 PM</p>
+        </header>
+
+        <!-- Combos Section -->
+        <div class="menu-section">
+            <h2 class="section-title">🎉 Kids Combo Meals 🎉</h2>
+
+            <div class="combo-grid">
+                <div class="combo-card">
+                    <div class="combo-header">
+                        <span class="emoji">📦</span>
+                        <div class="combo-info">
+                            <div class="combo-name">Combo 1</div>
+                            <div class="combo-price">₹159</div>
+                        </div>
+                    </div>
+                    <p class="combo-description">Veggie burger with nuggets & fries</p>
+                    <div class="combo-items">
+                        <div class="combo-item">✓ Mini veggie burger</div>
+                        <div class="combo-item">✓ Small fries</div>
+                        <div class="combo-item">✓ 4 nuggets</div>
+                        <div class="combo-item">✓ Choice of drink</div>
+                    </div>
+                    <div class="allergen-info">Contains: Gluten, Dairy</div>
+                </div>
+
+                <div class="combo-card">
+                    <div class="combo-header">
+                        <span class="emoji">🍔</span>
+                        <div class="combo-info">
+                            <div class="combo-name">Combo 2</div>
+                            <div class="combo-price">₹159</div>
+                        </div>
+                    </div>
+                    <p class="combo-description">Classic cheeseburger meal</p>
+                    <div class="combo-items">
+                        <div class="combo-item">✓ Mini cheeseburger</div>
+                        <div class="combo-item">✓ Small fries</div>
+                        <div class="combo-item">✓ Choice of drink</div>
+                    </div>
+                    <div class="allergen-info">Contains: Gluten, Dairy</div>
+                </div>
+
+                <div class="combo-card">
+                    <div class="combo-header">
+                        <span class="emoji">🍗</span>
+                        <div class="combo-info">
+                            <div class="combo-name">Combo 3</div>
+                            <div class="combo-price">₹149</div>
+                        </div>
+                    </div>
+                    <p class="combo-description">All-time favorite nuggets</p>
+                    <div class="combo-items">
+                        <div class="combo-item">✓ 6 crispy nuggets</div>
+                        <div class="combo-item">✓ Small fries</div>
+                        <div class="combo-item">✓ Choice of drink</div>
+                    </div>
+                    <div class="allergen-info">Contains: Gluten</div>
+                </div>
+
+                <div class="combo-card">
+                    <div class="combo-header">
+                        <span class="emoji">🎉</span>
+                        <div class="combo-info">
+                            <div class="combo-name">Combo 4</div>
+                            <div class="combo-price">₹159</div>
+                        </div>
+                    </div>
+                    <p class="combo-description">Potato burger with smiley fries</p>
+                    <div class="combo-items">
+                        <div class="combo-item">✓ Aloo Tikki burger</div>
+                        <div class="combo-item">✓ Smile fries</div>
+                        <div class="combo-item">✓ Choice of drink</div>
+                    </div>
+                    <div class="allergen-info">Contains: Gluten, Dairy</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <h2 style="margin-bottom: 15px; font-size: 2em;">🍔 Visit Us This Friday! 🍟</h2>
+            <p style="font-size: 1.3em; margin: 10px 0;">☎️ +91 9187575078</p>
+            <p style="font-size: 1.2em; margin: 20px 0;">Buffet on Wheels</p>
+            <p style="font-size: 1em; opacity: 0.95;">🌐 https://buffet-on-wheels-ba58b.web.app/cart1/guest</p>
+            <p style="font-size: 1.1em; margin-top: 20px; font-weight: 600;">🎉 Friday, July 18 | 4:30 PM - 9:30 PM 🎉</p>
+        </footer>
+    </div>
+</body>
+</html>

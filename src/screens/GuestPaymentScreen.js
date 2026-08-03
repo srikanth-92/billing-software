@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, ActivityIndicator, SafeAreaView, Platform,
+  ScrollView, ActivityIndicator, SafeAreaView, Platform, Alert,
 } from 'react-native';
 import {
   createRazorpayOrder, openRazorpayCheckout, closeRazorpayCheckout,
@@ -36,26 +36,54 @@ export default function GuestPaymentScreen({ navigation, route }) {
 
     async function init() {
       if (Platform.OS === 'web') {
+        // Check if in-app browser
+        const ua = navigator.userAgent || '';
+        const isInAppBrowser = (
+          /Instagram/i.test(ua) ||
+          /FBAN|FBAV/i.test(ua) ||
+          /WhatsApp/i.test(ua) ||
+          /Paytm/i.test(ua) ||
+          (/Android/i.test(ua) && /wv/.test(ua)) ||
+          (/iPhone|iPad|iPod/i.test(ua) && !/Version\/[\d.]+ .*Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua))
+        );
+
+        console.log('[GuestPaymentScreen] Browser detection:', { isInAppBrowser, ua });
+
+        // In-app browsers: Use Razorpay redirect mode (hosted payment page)
+        if (isInAppBrowser) {
+          console.log('[GuestPaymentScreen] In-app browser detected - using Razorpay redirect mode');
+          if (cancelled) return;
+
+          setState(STATE.AWAITING);
+
+          // Save order context for GuestConfirmScreen
+          sessionStorage.setItem('rzp_pending_order', JSON.stringify({
+            orderId, items, subtotal, tax, total, cartId, phone,
+          }));
+
+          // Use redirect mode - opens Razorpay hosted page
+          const callbackUrl = `${window.location.origin}/guest-confirm`;
+
+          openRazorpayCheckout({
+            razorpayOrderId: null,
+            amountRupees: total,
+            orderId,
+            callbackUrl, // Redirect mode
+            prefill: {},
+          })
+            .catch((err) => {
+              console.error('[GuestPaymentScreen] Razorpay init error:', err);
+              if (!cancelled) {
+                setState(STATE.ERROR);
+                setErrorMsg(err.message || 'Could not open payment page');
+              }
+            });
+
+          return;
+        }
+
+        // Regular browser: Use Razorpay modal
         try {
-          let rzpOId = null;
-          try {
-            console.log('[GuestPaymentScreen] Creating Razorpay order for orderId:', orderId, 'amount:', total);
-            const order = await createRazorpayOrder({ amountRupees: total, orderId });
-            rzpOId = order.id;
-            console.log('[GuestPaymentScreen] Razorpay order created:', rzpOId, 'status:', order.status);
-            if (!cancelled) setRzpOrderId(rzpOId);
-          } catch (err) {
-            console.error('[GuestPaymentScreen] Failed to create Razorpay order:', err);
-            console.error('[GuestPaymentScreen] Error details:', err.message);
-            // If order creation fails, still try to open checkout (will work without order_id in test mode)
-            if (!cancelled) {
-              Alert.alert(
-                'Order Creation Warning',
-                'Could not create Razorpay order. This may be due to API key issues. Contact support if payment fails.',
-                [{ text: 'OK' }]
-              );
-            }
-          }
           if (cancelled) return;
           setState(STATE.AWAITING);
 
@@ -70,11 +98,11 @@ export default function GuestPaymentScreen({ navigation, route }) {
           // Use NON-redirect mode (handler mode) - modal stays in same page
           // This works better in in-app browsers
           openRazorpayCheckout({
-            razorpayOrderId: rzpOId,
+            razorpayOrderId: null, // No order_id - direct payment
             amountRupees: total,
             orderId,
             callbackUrl: null, // No redirect - use handler mode
-            prefill: phone ? { contact: phone } : {},
+            prefill: {},
           })
             .then(async (payment) => {
               // Payment successful!
@@ -286,7 +314,7 @@ export default function GuestPaymentScreen({ navigation, route }) {
         </View>
       )}
 
-      {state === STATE.AWAITING && Platform.OS === 'web' && (
+      {state === STATE.AWAITING && Platform.OS === 'web' && !qrUpiString && (
         <View style={styles.card}>
           <ActivityIndicator size="large" color={THEME.gold} />
           <Text style={styles.cardTitle}>Complete payment in the popup</Text>
@@ -295,15 +323,25 @@ export default function GuestPaymentScreen({ navigation, route }) {
         </View>
       )}
 
-      {state === STATE.AWAITING && Platform.OS !== 'web' && (
+      {state === STATE.AWAITING && (Platform.OS !== 'web' || qrUpiString) && (
         <View style={styles.qrSection}>
-          <Text style={styles.qrTitle}>Scan & Pay</Text>
+          <Text style={styles.qrTitle}>Scan QR to Pay</Text>
           <Text style={styles.qrAmount}>{formatCurrency(total)}</Text>
-          <Text style={styles.qrHint}>Scan using any UPI app to pay</Text>
-          <QRCodeDisplay imageUrl={qrImageUrl} upiString={qrUpiString} size={qrSize} />
-          <View style={styles.waitingRow}>
-            <ActivityIndicator size="small" color={THEME.gold} />
-            <Text style={styles.waitingText}>Waiting for payment…</Text>
+
+          <View style={styles.instructionBox}>
+            <Text style={styles.instructionTitle}>📱 How to Pay:</Text>
+            <Text style={styles.instructionStep}>1. Open any UPI app (GPay, PhonePe, Paytm, etc.)</Text>
+            <Text style={styles.instructionStep}>2. Scan the QR code below</Text>
+            <Text style={styles.instructionStep}>3. Complete the payment</Text>
+            <Text style={styles.instructionStep}>4. Your token will appear here automatically</Text>
+          </View>
+
+          {qrUpiString && <QRCodeDisplay upiString={qrUpiString} size={qrSize} />}
+          {qrImageUrl && <QRCodeDisplay imageUrl={qrImageUrl} upiString={null} size={qrSize} />}
+
+          <View style={styles.warningBox}>
+            <Text style={styles.warningText}>✨ Stay on this screen</Text>
+            <Text style={styles.warningSubtext}>Token will appear automatically once payment is complete</Text>
           </View>
         </View>
       )}
@@ -407,6 +445,106 @@ const styles = StyleSheet.create({
   qrHint: { fontSize: 13, color: THEME.slate, textAlign: 'center', marginBottom: 20, paddingHorizontal: 20 },
   waitingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 },
   waitingText: { fontSize: 13, color: THEME.gold, fontWeight: '600' },
+  upiPayButton: {
+    backgroundColor: THEME.gold,
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 12,
+    marginVertical: 20,
+    shadowColor: THEME.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  upiPayText: {
+    color: THEME.navy,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  instructionBox: {
+    backgroundColor: THEME.white,
+    borderRadius: 12,
+    padding: 20,
+    marginVertical: 20,
+    width: '90%',
+    borderWidth: 2,
+    borderColor: THEME.gold,
+  },
+  instructionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: THEME.navy,
+    marginBottom: 12,
+  },
+  instructionStep: {
+    fontSize: 14,
+    color: THEME.slate,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  warningBox: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 8,
+    padding: 16,
+    marginTop: 20,
+    width: '90%',
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b',
+  },
+  warningText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#92400e',
+    marginBottom: 4,
+  },
+  warningSubtext: {
+    fontSize: 13,
+    color: '#78350f',
+    lineHeight: 18,
+  },
+  returnPrompt: {
+    backgroundColor: THEME.navy,
+    borderRadius: 16,
+    padding: 32,
+    marginTop: 20,
+    width: '90%',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: THEME.gold,
+  },
+  returnEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  returnTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: THEME.gold,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  returnText: {
+    fontSize: 16,
+    color: THEME.white,
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  returnSteps: {
+    width: '100%',
+    backgroundColor: 'rgba(201, 168, 64, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  returnStep: {
+    fontSize: 15,
+    color: THEME.gold,
+    marginBottom: 12,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
 
   successCard: {
     backgroundColor: THEME.white, borderRadius: 20, padding: 28, alignItems: 'center', marginTop: 12,

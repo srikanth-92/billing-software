@@ -11,10 +11,12 @@ const CATERING_PHONE_1 = '9187575078';
 const CATERING_ADDRESS = 'Whitefield, Bangalore - 560 067';
 
 const PACKAGES = [
+  // ── Vegetarian ──────────────────────────────────────────────
   {
     id: 'choice1',
     label: 'Classic',
     price: 450,
+    category: 'veg',
     tagColor: '#16a34a',
     tagBg: '#f0fdf4',
     includes: [
@@ -37,6 +39,7 @@ const PACKAGES = [
     id: 'choice2',
     label: 'Grand',
     price: 550,
+    category: 'veg',
     tagColor: '#b45309',
     tagBg: '#fffbeb',
     includes: [
@@ -60,6 +63,7 @@ const PACKAGES = [
     id: 'choice3',
     label: 'Royal',
     price: 650,
+    category: 'veg',
     tagColor: '#7c3aed',
     tagBg: '#f5f3ff',
     includes: [
@@ -76,32 +80,83 @@ const PACKAGES = [
       { label: 'Salad', qty: 'any three' },
       { label: 'Sweets', qty: 'any two' },
       { label: 'Ice Cream', qty: 'any two' },
-      { label: 'Live Chat', qty: 'any one' },
+      { label: 'Live Counter', qty: 'any one' },
+      { label: 'Accompaniments', qty: 'Pappad, Pickle, Raitha & Plain Curd' },
+      { label: 'Water Bottle', qty: '200 ml per head' },
+    ],
+  },
+  // ── Non-Vegetarian (₹50 extra per tier) ─────────────────────
+  {
+    id: 'nv1',
+    label: 'Classic',
+    price: 500,
+    category: 'nonveg',
+    tagColor: '#16a34a',
+    tagBg: '#f0fdf4',
+    includes: [
+      { label: 'Welcome Drink', qty: 'any one' },
+      { label: 'Soup', qty: 'any one' },
+      { label: 'Veg Starter', qty: 'any one' },
+      { label: 'Chicken Gravy', qty: 'any one' },
+      { label: 'Dry Sabzi', qty: 'any one' },
+      { label: 'Dal', qty: 'any one' },
+      { label: 'Breads', qty: 'any two' },
+      { label: 'Rice / Biryani', qty: 'any one' },
+      { label: 'Salad', qty: 'any two' },
+      { label: 'Sweets', qty: 'any one' },
+      { label: 'Ice Cream', qty: 'any one' },
       { label: 'Accompaniments', qty: 'Pappad, Pickle, Raitha & Plain Curd' },
       { label: 'Water Bottle', qty: '200 ml per head' },
     ],
   },
   {
-    id: 'choice4',
-    label: 'Imperial',
-    price: 750,
-    tagColor: '#0369a1',
-    tagBg: '#f0f9ff',
+    id: 'nv2',
+    label: 'Grand',
+    price: 600,
+    category: 'nonveg',
+    tagColor: '#b45309',
+    tagBg: '#fffbeb',
     includes: [
-      { label: 'Welcome Drink', qty: 'any two' },
+      { label: 'Welcome Drink', qty: 'any one' },
+      { label: 'Soup', qty: 'any two' },
+      { label: 'Veg Starter', qty: 'any one' },
+      { label: 'Chicken Gravy', qty: 'any one' },
+      { label: 'Paneer Gravy', qty: 'any one' },
+      { label: 'Dry Sabzi', qty: 'any one' },
+      { label: 'Dal', qty: 'any one' },
+      { label: 'Continental', qty: 'any one' },
+      { label: 'Breads', qty: 'any two' },
+      { label: 'Rice / Biryani', qty: 'any one' },
+      { label: 'Salad', qty: 'any three' },
+      { label: 'Sweets', qty: 'any two' },
+      { label: 'Ice Cream', qty: 'any one' },
+      { label: 'Accompaniments', qty: 'Pappad, Pickle, Raitha & Plain Curd' },
+      { label: 'Water Bottle', qty: '200 ml per head' },
+    ],
+  },
+  {
+    id: 'nv3',
+    label: 'Royal',
+    price: 700,
+    category: 'nonveg',
+    tagColor: '#7c3aed',
+    tagBg: '#f5f3ff',
+    includes: [
+      { label: 'Welcome Drink', qty: 'any one' },
       { label: 'Soup', qty: 'any two' },
       { label: 'Veg Starter', qty: 'any two' },
-      { label: 'Paneer Gravy', qty: 'any two' },
-      { label: 'Dry Sabzi', qty: 'any two' },
-      { label: 'Dal', qty: 'any two' },
-      { label: 'Continental', qty: 'any two' },
-      { label: 'Chinese', qty: 'any two' },
+      { label: 'Chicken Gravy', qty: 'any two' },
+      { label: 'Paneer Gravy', qty: 'any one' },
+      { label: 'Dry Sabzi', qty: 'any one' },
+      { label: 'Dal', qty: 'any one' },
+      { label: 'Continental', qty: 'any one' },
+      { label: 'Chinese', qty: 'any one' },
       { label: 'Breads', qty: 'any three' },
       { label: 'Rice / Biryani', qty: 'any two' },
       { label: 'Salad', qty: 'any three' },
-      { label: 'Sweets', qty: 'any three' },
+      { label: 'Sweets', qty: 'any two' },
       { label: 'Ice Cream', qty: 'any two' },
-      { label: 'Live Chat', qty: 'any one' },
+      { label: 'Live Counter', qty: 'any one' },
       { label: 'Accompaniments', qty: 'Pappad, Pickle, Raitha & Plain Curd' },
       { label: 'Water Bottle', qty: '200 ml per head' },
     ],
@@ -113,9 +168,9 @@ const MENU_SECTIONS = [
     title: 'Welcome Drink',
     emoji: '🥤',
     items: [
-      'Shikanji', 'Badam Milk',
-      'Virgin Mojito', 'Watermelon Juice', 'Fresh Lime Soda',
-      'Masala Chai', 'Filter Coffee',
+      'Classic Mint Mojito', 'Watermelon Mojito', 'Green Apple Mojito',
+      'Blue Lagoon Mojito', 'Strawberry Mojito', 'Orange Mojito',
+      'Litchi Mojito', 'Pineapple Mojito',
     ],
   },
   {
@@ -143,6 +198,16 @@ const MENU_SECTIONS = [
       'Paneer Makhani', 'Paneer Korma', 'Paneer Kofta',
       'Methi Malai Paneer', 'Achari Paneer', 'Paneer Lababdar',
       'Paneer Pasanda', 'Paneer Hara Masala', 'Paneer Jalfrezi',
+    ],
+  },
+  {
+    title: 'Chicken Gravy',
+    emoji: '🍗',
+    items: [
+      'Butter Chicken', 'Chicken Curry', 'Kadai Chicken',
+      'Chicken Masala', 'Chicken Do Pyaza', 'Chicken Korma',
+      'Chicken Kofta', 'Achari Chicken',
+      'Chicken Lababdar', 'Chicken Jalfrezi',
     ],
   },
   {
@@ -194,14 +259,16 @@ const MENU_SECTIONS = [
     ],
   },
   {
-    title: 'Breads',
+    title: 'Breads  (tandoor +₹20/plate)',
     emoji: '🫓',
     items: [
       'Roti / Fulka', 'Wheat Paratha', 'Puri', 'Bhature',
+      'Tandoori Roti', 'Butter Naan', 'Garlic Naan',
+      'Laccha Paratha', 'Missi Roti',
     ],
   },
   {
-    title: 'Salad',
+    title: 'Salad & Raita',
     emoji: '🥗',
     items: [
       'Boondi Raita', 'Cucumber Raita', 'Mixed Raita',
@@ -211,7 +278,7 @@ const MENU_SECTIONS = [
   {
     title: 'Sweets',
     emoji: '🍮',
-    items: ['Gulab Jamun', 'Rasgulla', 'Kheer', 'Jalebi', 'Barfi'],
+    items: ['Gulab Jamun', 'Rasgulla', 'Kheer', 'Jalebi'],
   },
   {
     title: 'Ice Cream',
@@ -221,9 +288,12 @@ const MENU_SECTIONS = [
     ],
   },
   {
-    title: 'Live Chat  (+₹50/head)',
+    title: 'Live Chaat  (₹50/plate · any 2)',
     emoji: '🍡',
-    items: ['Pani Puri', 'Dahi Puri', 'Papdi Chat'],
+    items: [
+      'Pani Puri', 'Bhel Puri', 'Sev Puri',
+      'Dahi Puri', 'Papdi Chaat', 'Aloo Tikki Chaat',
+    ],
   },
 ];
 
@@ -592,16 +662,17 @@ const LABEL_TO_ITEMS = {
   'Soup':             MENU_SECTIONS.find((s) => s.title === 'Soup')?.items || [],
   'Veg Starter':      MENU_SECTIONS.find((s) => s.title === 'Veg Starters')?.items || [],
   'Paneer Gravy':     MENU_SECTIONS.find((s) => s.title === 'Paneer Gravy')?.items || [],
+  'Chicken Gravy':    MENU_SECTIONS.find((s) => s.title === 'Chicken Gravy')?.items || [],
   'Dry Sabzi':        MENU_SECTIONS.find((s) => s.title === 'Dry Sabzi')?.items || [],
   'Dal':              MENU_SECTIONS.find((s) => s.title === 'Dal')?.items || [],
   'Continental':      MENU_SECTIONS.find((s) => s.title === 'Continental')?.items || [],
   'Chinese':          MENU_SECTIONS.find((s) => s.title === 'Chinese')?.items || [],
-  'Breads':           MENU_SECTIONS.find((s) => s.title === 'Breads')?.items || [],
+  'Breads':           MENU_SECTIONS.find((s) => s.title === 'Breads  (tandoor +₹20/plate)')?.items || [],
   'Rice / Biryani':   MENU_SECTIONS.find((s) => s.title === 'Rice & Biryani')?.items || [],
-  'Salad':            MENU_SECTIONS.find((s) => s.title === 'Salad')?.items || [],
+  'Salad':            MENU_SECTIONS.find((s) => s.title === 'Salad & Raita')?.items || [],
   'Sweets':           MENU_SECTIONS.find((s) => s.title === 'Sweets')?.items || [],
   'Ice Cream':        MENU_SECTIONS.find((s) => s.title === 'Ice Cream')?.items || [],
-  'Live Chat':        MENU_SECTIONS.find((s) => s.title === 'Live Chat  (+₹50/head)')?.items || [],
+  'Live Counter':     MENU_SECTIONS.find((s) => s.title === 'Live Chaat  (₹50/plate · any 2)')?.items || [],
   'Accompaniments':   [],
   'Water Bottle':     [],
 };
@@ -726,8 +797,8 @@ export default function CateringOrderScreen({ navigation }) {
         if (Platform.OS === 'web') window.alert('Please fill in all required fields.');
         return;
       }
-      if (parseInt(guestCount, 10) < 25) {
-        if (Platform.OS === 'web') window.alert('Minimum order is 25 guests.');
+      if (parseInt(guestCount, 10) < 30) {
+        if (Platform.OS === 'web') window.alert('Minimum order is 30 guests.');
         return;
       }
       setStep(2);
@@ -997,17 +1068,17 @@ export default function CateringOrderScreen({ navigation }) {
                     <TextInput style={styles.fieldInput} value={contactName} onChangeText={setContactName} placeholder="Full name" placeholderTextColor={THEME.slateLight} />
                     <Text style={styles.fieldLabel}>Mobile Number *</Text>
                     <TextInput style={styles.fieldInput} value={contactPhone} onChangeText={(v) => setContactPhone(v.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit number" keyboardType="phone-pad" placeholderTextColor={THEME.slateLight} />
-                    <Text style={styles.fieldLabel}>Number of Guests * <Text style={{ fontWeight: '400', color: THEME.slateLight }}>(min order 25)</Text></Text>
+                    <Text style={styles.fieldLabel}>Number of Guests * <Text style={{ fontWeight: '400', color: THEME.slateLight }}>(min order 30)</Text></Text>
                     <TextInput
-                      style={[styles.fieldInput, guestCount && parseInt(guestCount, 10) < 25 && { borderColor: '#ef4444' }]}
+                      style={[styles.fieldInput, guestCount && parseInt(guestCount, 10) < 30 && { borderColor: '#ef4444' }]}
                       value={guestCount}
                       onChangeText={(v) => setGuestCount(v.replace(/\D/g, ''))}
                       placeholder="e.g. 50"
                       keyboardType="number-pad"
                       placeholderTextColor={THEME.slateLight}
                     />
-                    {guestCount && parseInt(guestCount, 10) < 25 && (
-                      <Text style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>Minimum order is 25 guests</Text>
+                    {guestCount && parseInt(guestCount, 10) < 30 && (
+                      <Text style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>Minimum order is 30 guests</Text>
                     )}
                     <Text style={styles.fieldLabel}>Event Type *</Text>
                     <TextInput style={styles.fieldInput} value={eventType} onChangeText={setEventType} placeholder="e.g. Wedding, Birthday, Corporate, Kitty Party..." placeholderTextColor={THEME.slateLight} />
@@ -1104,6 +1175,10 @@ export default function CateringOrderScreen({ navigation }) {
           )}
           <View style={{ flex: 1, alignItems: 'center' }}>
             <Text style={styles.headerTitle}>Buffet on Wheels</Text>
+            <Text style={styles.headerTagline}>Banquet Catering</Text>
+            <TouchableOpacity onPress={() => callPhone(CATERING_PHONE_1)}>
+              <Text style={styles.headerContact}>Srikanth P  •  📞 +91 {CATERING_PHONE_1}</Text>
+            </TouchableOpacity>
           </View>
           {navigation && <View style={styles.backBtn} />}
         </View>
@@ -1117,55 +1192,63 @@ export default function CateringOrderScreen({ navigation }) {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>Vegetarian Banquet Packages</Text>
+        <Text style={styles.sectionTitle}>Banquet Catering Packages</Text>
         <Text style={styles.sectionSub}>Choose a package and we'll help you build your menu</Text>
 
-        <View style={isWide ? { flexDirection: 'row', gap: 10 } : { flexDirection: 'column', gap: 10 }}>
-        {PACKAGES.map((p) => {
-          const active = selectedPkg === p.id;
-          return (
-            <TouchableOpacity
-              key={p.id}
-              style={[styles.pkgCard, isWide && { flex: 1 }, active && { borderColor: p.tagColor, borderWidth: 2 }]}
-              onPress={() => handleSelectPackage(active ? null : p.id)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.pkgCardHeader}>
-                <View style={[styles.pkgBadge, { backgroundColor: p.tagBg }]}>
-                  <Text style={[styles.pkgBadgeText, { color: p.tagColor }]}>{p.label}</Text>
-                </View>
-                <Text style={styles.pkgPrice}>
-                  <Text style={styles.pkgPriceRs}>₹</Text>
-                  {p.price.toLocaleString('en-IN')}
-                  <Text style={styles.pkgPriceSuffix}> + Tax / person</Text>
-                </Text>
-                <View style={[styles.selectCircle, active && { backgroundColor: p.tagColor, borderColor: p.tagColor }]}>
-                  {active && <Text style={styles.selectTick}>✓</Text>}
-                </View>
-              </View>
-              <View style={styles.includesList}>
-                {p.includes.map((inc, i) => {
-                  const countMap = { 'any one': '(1)', 'any two': '(2)', 'any three': '(3)' };
-                  const display = countMap[inc.qty]
-                    ? `${inc.label} ${countMap[inc.qty]}`
-                    : `${inc.label}: ${inc.qty}`;
-                  return (
-                    <View key={i} style={styles.includeRow}>
-                      <Text style={[styles.includeDot, { color: p.tagColor }]}>●</Text>
-                      <Text style={styles.includeLabel}>{display}</Text>
+        {[
+          { key: 'veg', heading: '🥗 Vegetarian Packages' },
+          { key: 'nonveg', heading: '🍗 Non-Vegetarian Packages' },
+        ].map((group) => (
+          <View key={group.key}>
+            <Text style={styles.pkgGroupHeading}>{group.heading}</Text>
+            <View style={isWide ? { flexDirection: 'row', gap: 10 } : { flexDirection: 'column', gap: 10 }}>
+            {PACKAGES.filter((p) => p.category === group.key).map((p) => {
+              const active = selectedPkg === p.id;
+              return (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[styles.pkgCard, isWide && { flex: 1 }, active && { borderColor: p.tagColor, borderWidth: 2 }]}
+                  onPress={() => handleSelectPackage(active ? null : p.id)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.pkgCardHeader}>
+                    <View style={[styles.pkgBadge, { backgroundColor: p.tagBg }]}>
+                      <Text style={[styles.pkgBadgeText, { color: p.tagColor }]}>{p.label}</Text>
                     </View>
-                  );
-                })}
-              </View>
-              {active && (
-                <TouchableOpacity style={[styles.bookBtn, { marginTop: 14 }]} onPress={handleProceedToMenu}>
-                  <Text style={styles.bookBtnText}>Select My Menu →</Text>
+                    <Text style={styles.pkgPrice}>
+                      <Text style={styles.pkgPriceRs}>₹</Text>
+                      {p.price.toLocaleString('en-IN')}
+                      <Text style={styles.pkgPriceSuffix}> + Tax / person</Text>
+                    </Text>
+                    <View style={[styles.selectCircle, active && { backgroundColor: p.tagColor, borderColor: p.tagColor }]}>
+                      {active && <Text style={styles.selectTick}>✓</Text>}
+                    </View>
+                  </View>
+                  <View style={styles.includesList}>
+                    {p.includes.map((inc, i) => {
+                      const countMap = { 'any one': '(1)', 'any two': '(2)', 'any three': '(3)' };
+                      const display = countMap[inc.qty]
+                        ? `${inc.label} ${countMap[inc.qty]}`
+                        : `${inc.label}: ${inc.qty}`;
+                      return (
+                        <View key={i} style={styles.includeRow}>
+                          <Text style={[styles.includeDot, { color: p.tagColor }]}>●</Text>
+                          <Text style={styles.includeLabel}>{display}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  {active && (
+                    <TouchableOpacity style={[styles.bookBtn, { marginTop: 14 }]} onPress={handleProceedToMenu}>
+                      <Text style={styles.bookBtnText}>Select My Menu →</Text>
+                    </TouchableOpacity>
+                  )}
                 </TouchableOpacity>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-        </View>
+              );
+            })}
+            </View>
+          </View>
+        ))}
 
         <View style={styles.qualityCard}>
           <Text style={styles.qualityTitle}>Our Quality Promise</Text>
@@ -1179,6 +1262,8 @@ export default function CateringOrderScreen({ navigation }) {
               { icon: '🫧', text: 'RO Purified Water' },
               { icon: '🧤', text: 'Hygiene-Trained Staff' },
               { icon: '❄️', text: 'Cold-Chain Maintained' },
+              { icon: '🍽️', text: 'Separate Veg & Non-Veg Prep' },
+              { icon: '😋', text: 'Free Tasting Before Booking' },
             ].map((q) => (
               <View key={q.text} style={styles.qualityItem}>
                 <Text style={styles.qualityIcon}>{q.icon}</Text>
@@ -1190,11 +1275,15 @@ export default function CateringOrderScreen({ navigation }) {
 
         <View style={styles.notesCard}>
           <Text style={styles.notesTitle}>Important Notes</Text>
-          <Text style={styles.notesItem}>* Paneer / Mushroom charged at ₹30 extra per person</Text>
+          <Text style={styles.notesItem}>* Minimum 30 pax (persons) per order</Text>
+          <Text style={styles.notesItem}>* Tax @ 5% applicable on all packages</Text>
+          <Text style={styles.notesItem}>* Strictly separate utensils, sections &amp; areas maintained for veg and non-veg preparation</Text>
+          <Text style={styles.notesItem}>* Taste any one curry from the menu free of cost before booking</Text>
+          <Text style={styles.notesItem}>* Live Chaats — ₹50 per plate extra (any 2 items)</Text>
+          <Text style={styles.notesItem}>* Tandoor Breads — ₹20 per plate extra</Text>
           <Text style={styles.notesItem}>* 20% advance required, balance on or before event</Text>
           <Text style={styles.notesItem}>* Decoration not included</Text>
           <Text style={styles.notesItem}>* UPI &amp; cash accepted — no discount, no extra charge</Text>
-          <Text style={styles.notesItem}>* Buffet setup, transportation &amp; buffet tables to be arranged by guest</Text>
           <Text style={styles.notesItem}>* Water bottle (200ml) per head included; extra chargeable</Text>
         </View>
 
@@ -1223,6 +1312,8 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, justifyContent: 'center' },
   backBtnText: { color: THEME.gold, fontSize: 22, fontWeight: 'bold' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: THEME.gold, textAlign: 'center' },
+  headerTagline: { fontSize: 10, color: '#e8eefc', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', marginTop: 2 },
+  headerContact: { fontSize: 12, color: THEME.gold, textAlign: 'center', marginTop: 4 },
   headerSub: { fontSize: 11, color: THEME.slateLight, marginTop: 2, textAlign: 'center' },
   servicesRow: { paddingHorizontal: 16, paddingBottom: 12, gap: 8, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
   serviceChip: {
@@ -1244,6 +1335,7 @@ const styles = StyleSheet.create({
 
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.navy, marginBottom: 4 },
   sectionSub: { fontSize: 12, color: THEME.slate, marginBottom: 14 },
+  pkgGroupHeading: { fontSize: 15, fontWeight: '700', color: THEME.navy, marginTop: 6, marginBottom: 10 },
 
   pkgCard: {
     backgroundColor: THEME.white, borderRadius: 16,

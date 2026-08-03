@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   SafeAreaView, ActivityIndicator, RefreshControl, Modal,
-  ScrollView,
+  ScrollView, Platform,
 } from 'react-native';
 import Svg, { Path, G, Text as SvgText, Polyline, Line, Circle } from 'react-native-svg';
 import { subscribeTodayOrders, loadOrdersByDate, loadOrdersForRange } from '../utils/storage';
@@ -10,6 +10,7 @@ import { THEME } from '../constants/theme';
 import { formatCurrency, formatDateTime } from '../utils/razorpay';
 import { useLayout } from '../utils/dimensions';
 import { RESTAURANT_NAME, MENU_ITEMS, EMPLOYEES } from '../constants';
+import { loadSession } from '../utils/session';
 
 const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Beverages'];
 const CAT_COLORS = { Breakfast: '#ea580c', Lunch: '#ca8a04', Dinner: '#4f46e5', Beverages: '#0891b2' };
@@ -223,7 +224,8 @@ function CalendarModal({ visible, onClose, onSelectDate, revenueByDate }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function SalesScreen({ navigation, route }) {
-  const employee = EMPLOYEES.find((e) => e.username === route.params?.employeeUsername) || EMPLOYEES[0];
+  const session = loadSession();
+  const employee = EMPLOYEES.find((e) => e.username === session?.username) || EMPLOYEES[0];
   const { isTablet } = useLayout();
   const isAdmin = employee.role === 'admin';
 

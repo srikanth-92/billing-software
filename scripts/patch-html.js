@@ -21,6 +21,16 @@ const newStyle = `<style id="expo-reset">
         overflow: hidden;
         max-width: 100vw;
       }
+      /* Razorpay modal z-index fixes */
+      .razorpay-container {
+        position: fixed !important;
+        z-index: 999999 !important;
+        overflow: auto !important;
+      }
+      iframe[name="razorpay-checkout-frame"] {
+        position: fixed !important;
+        z-index: 999999 !important;
+      }
     </style>`;
 
 html = html.replace(oldStyle, newStyle);

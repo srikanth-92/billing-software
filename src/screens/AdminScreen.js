@@ -6,14 +6,16 @@ import {
 import { useLayout } from '../utils/dimensions';
 import { MENU_ITEMS, RESTAURANT_NAME, EMPLOYEES } from '../constants';
 import { clearSession, loadSession } from '../utils/session';
-import { saveWeeklyMenu, loadWeeklyMenu, loadOrdersForDays, lastNDays, loadAllCartOverrides, saveCartOverrides } from '../utils/storage';
+import { saveWeeklyMenu, loadWeeklyMenu, loadOrdersForDays, lastNDays, loadAllCartOverrides, saveCartOverrides, loadDailySalesForRange } from '../utils/storage';
 import { formatCurrency } from '../utils/razorpay';
 import { THEME } from '../constants/theme';
 import DayMenuScreen from './DayMenuScreen';
+import TrendChart from '../components/TrendChart';
 
 const MEAL_CATEGORIES = ['Menu'];
-const TABS = ["Day's Menu", 'Staff Preview', 'Cart Stock', 'Vendor Dashboard'];
+const TABS = ["Day's Menu", 'Staff Preview', 'Cart Stock', 'Vendor Dashboard', 'Daily Sales Trend'];
 const VENDORS = ['cart1', 'cart2', 'cart3', 'cart4', 'cart5'];
+const CART_COLORS = ['#f97316', '#8b5cf6', '#10b981', '#3b82f6', '#ec4899'];
 
 const CATEGORY_META = {
   Menu: { emoji: '🍽️', color: '#ea580c', bg: '#fff7ed' },
@@ -42,6 +44,14 @@ function formatDate(dateStr) {
   });
 }
 
+function toDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function addDays(date, n) {
+  const d = new Date(date); d.setDate(d.getDate() + n); return d;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AdminScreen({ navigation, route }) {
@@ -59,6 +69,11 @@ export default function AdminScreen({ navigation, route }) {
   // ── Cart overrides state ───────────────────────────────────────────────────
   // { [cartId]: Set<itemId> } — which items are disabled per cart
   const [cartOverrides, setCartOverrides] = useState({});
+
+  // ── Daily sales trend state ────────────────────────────────────────────────
+  const [salesTrendData, setSalesTrendData] = useState(null);
+  const [salesTrendLoading, setSalesTrendLoading] = useState(true);
+  const [salesTrendDays, setSalesTrendDays] = useState(14);
 
   const loadAll = useCallback(async () => {
     const [stored, orders, overrides] = await Promise.all([
@@ -87,6 +102,27 @@ export default function AdminScreen({ navigation, route }) {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Load per-cart daily sales trend (manual Log Sale entries)
+  useEffect(() => {
+    setSalesTrendLoading(true);
+    const to = new Date();
+    const from = addDays(to, -(salesTrendDays - 1));
+    loadDailySalesForRange(toDateStr(from), toDateStr(to)).then((byDate) => {
+      const days = Array.from({ length: salesTrendDays }, (_, i) => toDateStr(addDays(from, i)));
+      const series = VENDORS.map((cartId, idx) => ({
+        label: cartId.toUpperCase(),
+        color: CART_COLORS[idx % CART_COLORS.length],
+        data: days.map((ds) => {
+          const sales = byDate[ds] || [];
+          return sales.filter((s) => s.cartId === cartId).reduce((sum, s) => sum + s.totalAmount, 0);
+        }),
+      }));
+      const labels = days.map((ds) => ds.slice(5)); // MM-DD
+      setSalesTrendData({ series, labels });
+      setSalesTrendLoading(false);
+    });
+  }, [salesTrendDays, refreshKey]);
 
   async function handleRefresh() {
     setInitialMenu(null);
@@ -515,15 +551,71 @@ export default function AdminScreen({ navigation, route }) {
     );
   };
 
+  // ── Daily Sales Trend (line graph, manual Log Sale entries) ────────────────
+
+  const DailySalesTrend = () => {
+    const RANGE_OPTIONS = [7, 14, 30];
+    return (
+      <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={styles.dashContent} showsVerticalScrollIndicator={true}>
+        <View style={styles.chartCard}>
+          <View style={styles.chartHeaderRow}>
+            <View>
+              <Text style={styles.chartTitle}>Total Sales per Cart, per Day</Text>
+              <Text style={styles.chartHint}>From staff-logged counter sales</Text>
+            </View>
+            <View style={styles.rangeRow}>
+              {RANGE_OPTIONS.map((n) => (
+                <TouchableOpacity
+                  key={n}
+                  style={[styles.rangeChip, salesTrendDays === n && styles.rangeChipActive]}
+                  onPress={() => setSalesTrendDays(n)}
+                >
+                  <Text style={[styles.rangeChipText, salesTrendDays === n && styles.rangeChipTextActive]}>{n}d</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {salesTrendLoading || !salesTrendData ? (
+            <ActivityIndicator color="#f97316" style={{ marginVertical: 24 }} />
+          ) : (
+            <>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ width: '100%' }}>
+                <TrendChart
+                  series={salesTrendData.series}
+                  labels={salesTrendData.labels}
+                  width={Math.max(340, salesTrendData.labels.length * 32)}
+                  height={220}
+                />
+              </ScrollView>
+              <View style={styles.trendLegend}>
+                {salesTrendData.series.map((s) => {
+                  const total = s.data.reduce((sum, v) => sum + v, 0);
+                  return (
+                    <View key={s.label} style={styles.trendLegendItem}>
+                      <View style={[styles.trendLegendDot, { backgroundColor: s.color }]} />
+                      <Text style={styles.trendLegendLabel}>{s.label} · {formatCurrency(total)}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Header />
       <TabBar />
       <View style={{ flex: 1, minHeight: 0 }}>
-        {activeTab === "Day's Menu"      && <DayMenuScreen key={refreshKey} initialMenu={initialMenu} onSave={handleSave} />}
-        {activeTab === 'Staff Preview'   && <StaffPreview key={refreshKey} />}
-        {activeTab === 'Cart Stock'      && <CartStockEditor key={refreshKey} />}
-        {activeTab === 'Vendor Dashboard'&& <Dashboard />}
+        {activeTab === "Day's Menu"        && <DayMenuScreen key={refreshKey} initialMenu={initialMenu} onSave={handleSave} />}
+        {activeTab === 'Staff Preview'     && <StaffPreview key={refreshKey} />}
+        {activeTab === 'Cart Stock'        && <CartStockEditor key={refreshKey} />}
+        {activeTab === 'Vendor Dashboard'  && <Dashboard />}
+        {activeTab === 'Daily Sales Trend' && <DailySalesTrend />}
       </View>
     </SafeAreaView>
   );
@@ -704,4 +796,22 @@ const styles = StyleSheet.create({
   stockToggleOn: { backgroundColor: '#dcfce7' },
   stockToggleOff: { backgroundColor: '#fee2e2' },
   stockToggleText: { fontSize: 12, fontWeight: '700', color: THEME.text },
+
+  // ── Daily Sales Trend ──────────────────────────────────────────────────────
+  chartCard: {
+    backgroundColor: THEME.white, borderRadius: 16, padding: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  },
+  chartHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 10 },
+  chartTitle: { fontSize: 16, fontWeight: 'bold', color: THEME.text, marginBottom: 2 },
+  chartHint: { fontSize: 12, color: THEME.slateLight },
+  rangeRow: { flexDirection: 'row', gap: 6 },
+  rangeChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, backgroundColor: '#f1f5f9' },
+  rangeChipActive: { backgroundColor: THEME.navy },
+  rangeChipText: { fontSize: 12, fontWeight: '700', color: THEME.slate },
+  rangeChipTextActive: { color: THEME.gold },
+  trendLegend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 14 },
+  trendLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  trendLegendDot: { width: 10, height: 10, borderRadius: 5 },
+  trendLegendLabel: { fontSize: 12, color: THEME.slate, fontWeight: '600' },
 });

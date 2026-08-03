@@ -15,19 +15,33 @@ export const MENU_ITEMS = [
   { id: 'b6', name: 'Coffee',                  emoji: '☕', price: 15, category: 'Menu', description: 'South Indian filter coffee with frothy milk' },
   { id: 'b7', name: 'Badam Milk',              emoji: '🥛', price: 25, category: 'Menu', description: 'Creamy almond milk with saffron' },
 
+  // ── Thalis ────────────────────────────────────────────────────────────────────
+  { id: 't1', name: 'Veg Thali',      emoji: '🍽️', price: 150, category: 'Menu', description: 'Paneer Sabzi · Dal · Rice · 2 Ghee Roti' },
+  { id: 't4', name: 'Non-Veg Thali',  emoji: '👑', price: 170, category: 'Menu', description: 'Chicken Sabzi · Dal · Rice · 2 Ghee Roti' },
+
   // ── À La Carte ──────────────────────────────────────────────────────────────────
-  // Thalis removed (2026-07-21). Half portions capped at ₹95, full portions at ₹190.
   { id: 'a1', name: 'Paneer Sabzi (Half)',    emoji: '🧈', price: 95,  category: 'Menu', description: '4 pieces paneer in gravy' },
   { id: 'a2', name: 'Paneer Sabzi (Full)',    emoji: '🧈', price: 180, category: 'Menu', description: '8 pieces paneer in gravy' },
-  { id: 'a3', name: 'Chicken Sabzi (Half)',   emoji: '🍗', price: 95,  category: 'Menu', description: '3 pieces chicken in gravy' },
-  { id: 'a4', name: 'Chicken Sabzi (Full)',   emoji: '🍗', price: 190, category: 'Menu', description: '6 pieces chicken in gravy' },
-  { id: 'a5', name: 'Rice (Full Portion)',    emoji: '🍚', price: 100, category: 'Menu', description: 'Steamed basmati rice' },
-  { id: 'a6', name: 'Roti (Single)',          emoji: '🫓', price: 20,  category: 'Menu', description: 'Freshly made wheat roti' },
+  { id: 'a3', name: 'Chicken Sabzi (Half)',   emoji: '🍗', price: 110, category: 'Menu', description: '3 pieces chicken in gravy' },
+  { id: 'a4', name: 'Chicken Sabzi (Full)',   emoji: '🍗', price: 210, category: 'Menu', description: '6 pieces chicken in gravy' },
+  { id: 'a9',  name: 'Dal (Half)',            emoji: '🍲', price: 60,  category: 'Menu', description: 'Home-style dal — half portion' },
+  { id: 'a10', name: 'Dal (Full)',            emoji: '🍲', price: 120, category: 'Menu', description: 'Home-style dal — full portion' },
+  { id: 'a5', name: 'Rice Item of the Day (Half)', emoji: '🍚', price: 80,  category: 'Menu', description: 'Rice-based item — rotates daily' },
+  { id: 'a8', name: 'Rice Item of the Day (Full)', emoji: '🍚', price: 150, category: 'Menu', description: 'Rice-based item — rotates daily' },
   { id: 'a7', name: 'Ghee Roti (Single)',     emoji: '🫓', price: 15,  category: 'Menu', description: 'Freshly made wheat roti brushed with ghee' },
 
   // ── Extras ──────────────────────────────────────────────────────────────────────
   // Sweet of the Day & Mocktail of the Day removed (2026-07-21).
   { id: 'e3', name: 'Water Bottle',        emoji: '💧', price: 6,  category: 'Menu', description: '200 ml mineral water' },
+];
+
+// Preset combo items for the manual/counter Daily Sales log (Log Sale screen).
+// Staff tap +/- to record how many of each they sold; custom items can be added too.
+export const PRESET_SALE_ITEMS = [
+  { name: 'Roti Dal Veg Curry', price: 100 },
+  { name: 'Roti Dal Non-Veg Curry', price: 120 },
+  { name: 'Rice Dal Veg Curry', price: 100 },
+  { name: 'Rice Dal Non-Veg Curry', price: 120 },
 ];
 
 // Razorpay configuration

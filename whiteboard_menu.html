@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Buffet on Wheels — Whiteboard Menu</title>
+<style>
+  /* ── Brand palette (matches the app) ───────────────────────────── */
+  :root {
+    --navy:  #0f2340;
+    --navy2: #162d50;
+    --gold:  #c9a840;
+    --goldPale: #fdf6dc;
+    --slate: #64748b;
+    --line:  #e8d78a;
+    --ink:   #1f2937;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f1f5f9;
+    color: var(--ink);
+    padding: 24px;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ── The printable sheet (A4 portrait) ─────────────────────────── */
+  .sheet {
+    width: 210mm;
+    min-height: 297mm;
+    background: #fff;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ─────────────────────────────────────────────────────── */
+  header {
+    background: var(--navy);
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    color: #fff;
+    text-align: center;
+    padding: 26px 20px 22px;
+    border-bottom: 6px solid var(--gold);
+  }
+  header .brand {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--gold);
+  }
+  header .tag {
+    margin-top: 4px;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #cbd5e1;
+  }
+  header .title {
+    margin-top: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(201,168,64,0.18);
+    display: inline-block;
+    padding: 5px 16px;
+    border-radius: 20px;
+  }
+
+  /* ── Body / sections ────────────────────────────────────────────── */
+  .body { padding: 20px 28px 8px; flex: 1; }
+
+  .section { margin-bottom: 16px; break-inside: avoid; }
+
+  .section h2 {
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--line);
+    margin-bottom: 8px;
+  }
+  .section h2 .emoji { font-size: 18px; }
+
+  .row {
+    display: flex;
+    align-items: baseline;
+    padding: 5px 2px;
+    font-size: 15px;
+  }
+  .row .name { font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .row .sub  { font-size: 11px; color: var(--slate); margin-left: 6px; font-weight: 400; }
+  .row .dots {
+    flex: 1;
+    border-bottom: 1.5px dotted #cbd5e1;
+    margin: 0 8px;
+    transform: translateY(-3px);
+  }
+  .row .price {
+    font-weight: 800;
+    color: var(--navy);
+    white-space: nowrap;
+    font-size: 15px;
+  }
+
+  /* ── Footer ─────────────────────────────────────────────────────── */
+  footer {
+    background: var(--goldPale);
+    border-top: 2px solid var(--line);
+    padding: 12px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--slate);
+  }
+  footer .closed {
+    font-weight: 700;
+    color: #b91c1c;
+  }
+
+  /* ── Print rules ────────────────────────────────────────────────── */
+  @media print {
+    body { background: #fff; padding: 0; }
+    .sheet { box-shadow: none; border-radius: 0; width: 100%; min-height: auto; }
+    .no-print { display: none !important; }
+    @page { size: A4 portrait; margin: 0; }
+  }
+
+  .no-print {
+    position: fixed;
+    top: 16px; right: 16px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+</style>
+</head>
+<body>
+
+<button class="no-print" onclick="window.print()">🖨️ Print</button>
+
+<div class="sheet">
+  <header>
+    <div class="brand">Buffet on Wheels</div>
+    <div class="tag">Fresh · Daily · Home-style</div>
+    <div class="title">TODAY'S MENU</div>
+  </header>
+
+  <div class="body">
+
+    <!-- Thalis -->
+    <div class="section">
+      <h2><span class="emoji">🍽️</span> Thalis <span style="font-size:11px;font-weight:400;color:var(--slate);letter-spacing:0;text-transform:none;">— Sabzi · Dal · Rice · 2 Ghee Roti</span></h2>
+      <div class="row"><span class="name">Veg Thali</span><span class="sub">Paneer</span><span class="dots"></span><span class="price">₹150</span></div>
+      <div class="row"><span class="name">Non-Veg Thali</span><span class="sub">Chicken</span><span class="dots"></span><span class="price">₹170</span></div>
+    </div>
+
+    <!-- Beverages -->
+    <div class="section">
+      <h2><span class="emoji">☕</span> Beverages</h2>
+      <div class="row"><span class="name">Tea</span><span class="dots"></span><span class="price">₹15</span></div>
+      <div class="row"><span class="name">Coffee</span><span class="dots"></span><span class="price">₹15</span></div>
+      <div class="row"><span class="name">Badam Milk</span><span class="dots"></span><span class="price">₹25</span></div>
+    </div>
+
+    <!-- Mains -->
+    <div class="section">
+      <h2><span class="emoji">🍽️</span> Mains &amp; Sabzis</h2>
+      <div class="row"><span class="name">Paneer Sabzi</span><span class="sub">Half / Full</span><span class="dots"></span><span class="price">₹95 / ₹180</span></div>
+      <div class="row"><span class="name">Chicken Sabzi</span><span class="sub">Half / Full</span><span class="dots"></span><span class="price">₹110 / ₹210</span></div>
+      <div class="row"><span class="name">Dal</span><span class="sub">Half / Full</span><span class="dots"></span><span class="price">₹60 / ₹120</span></div>
+      <div class="row"><span class="name">Rice Item of the Day</span><span class="sub">Half / Full</span><span class="dots"></span><span class="price">₹80 / ₹150</span></div>
+    </div>
+
+    <!-- Breads -->
+    <div class="section">
+      <h2><span class="emoji">🫓</span> Breads</h2>
+      <div class="row"><span class="name">Ghee Roti (Single)</span><span class="dots"></span><span class="price">₹15</span></div>
+    </div>
+
+    <!-- Extras -->
+    <div class="section">
+      <h2><span class="emoji">💧</span> Extras</h2>
+      <div class="row"><span class="name">Water Bottle</span><span class="sub">200 ml</span><span class="dots"></span><span class="price">₹6</span></div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>📱 Scan the QR at your table to self-order</span>
+    <span class="closed">CLOSED ON MONDAYS</span>
+  </footer>
+</div>
+
+</body>
+</html>

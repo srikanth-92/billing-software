@@ -260,6 +260,9 @@ export default function MenuScreen({ navigation, route }) {
           <Text style={styles.headerSub}>Logged in as {employee.name}</Text>
         </View>
         <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => navigation.navigate('LogSale')} style={styles.headerBtn}>
+            <Text style={styles.headerBtnText}>Log Sale</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('GuestQR')} style={styles.headerBtn}>
             <Text style={styles.headerBtnText}>Guest QR</Text>
           </TouchableOpacity>

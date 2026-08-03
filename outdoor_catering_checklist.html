@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outdoor Catering Checklist</title>
+    <style>
+        @media print {
+            body { margin: 0; padding: 20px; }
+            .no-print { display: none; }
+            .page-break { page-break-after: always; }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+
+        .date-section {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .order-summary {
+            background: #fff9e6;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .order-summary h2 {
+            margin-top: 0;
+            color: #e67e22;
+            font-size: 18px;
+        }
+
+        .order-summary ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .order-summary li {
+            margin: 5px 0;
+            font-weight: 500;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #3498db;
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .section-content {
+            padding: 15px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            background: white;
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .checklist-item:hover {
+            background: #f8f9fa;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #3498db;
+            border-radius: 3px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .item-details {
+            flex-grow: 1;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 3px;
+        }
+
+        .item-quantity {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .item-note {
+            font-size: 13px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .priority-high {
+            background: #ffe6e6;
+        }
+
+        .priority-badge {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .signature-box {
+            width: 45%;
+        }
+
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 40px;
+            padding-top: 5px;
+            font-size: 13px;
+        }
+
+        .print-button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+        }
+
+        .print-button:hover {
+            background: #229954;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ Print Checklist</button>
+
+    <div class="container">
+        <h1>🍽️ OUTDOOR CATERING CHECKLIST</h1>
+
+        <div class="date-section">
+            <strong>Date:</strong> _________________ <br>
+            <strong>Departure Time:</strong> _________________ <strong>Return Time:</strong> _________________
+        </div>
+
+        <div class="order-summary">
+            <h2>📋 Order Summary</h2>
+            <ul>
+                <li><strong>25 Portions</strong> - Fried Rice</li>
+                <li><strong>55 Pieces</strong> - Veg Ball Manchurian Gravy</li>
+                <li><strong>15 Plates</strong> - Baby Corn Manchurian</li>
+                <li><strong>Kids Items:</strong> French Fries + Veg Finger Sticks</li>
+            </ul>
+        </div>
+
+        <!-- FOOD ITEMS -->
+        <div class="section">
+            <div class="section-header">🍚 FOOD ITEMS</div>
+            <div class="section-content">
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Fried Rice <span class="item-quantity">25 Portions</span><span class="priority-badge">MAIN</span></div>
+                        <div class="item-note">Check temperature (above 60°C/140°F) before packing</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Veg Ball Manchurian Gravy <span class="item-quantity">55 Pieces</span><span class="priority-badge">MAIN</span></div>
+                        <div class="item-note">Pack balls and gravy separately if needed; verify count</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Baby Corn Manchurian <span class="item-quantity">15 Plates</span><span class="priority-badge">MAIN</span></div>
+                        <div class="item-note">Ensure adequate gravy consistency for transport</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">French Fries <span class="priority-badge">KIDS</span></div>
+                        <div class="item-note">Pack in ventilated container to keep crispy</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Veg Finger Sticks <span class="priority-badge">KIDS</span></div>
+                        <div class="item-note">Ensure fully cooked and crispy</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Frozen French Fries <span class="priority-badge">RAW MATERIAL</span></div>
+                        <div class="item-note">Adequate quantity for kids items</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Frozen Veg Sticks <span class="priority-badge">RAW MATERIAL</span></div>
+                        <div class="item-note">Adequate quantity for kids items</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Gulab Jamun <span class="item-quantity">1 Box</span><span class="priority-badge">DESSERT</span></div>
+                        <div class="item-note">New box, check packaging is sealed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HYGIENE & SAFETY -->
+        <div class="section">
+            <div class="section-header">🧤 HYGIENE & SAFETY ITEMS (CRITICAL)</div>
+            <div class="section-content">
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Disposable Gloves <span class="item-quantity">2-3 boxes</span></div>
+                        <div class="item-note">Food-grade, medium & large sizes</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Hair Nets / Caps <span class="item-quantity">1 per staff member + extras</span></div>
+                        <div class="item-note">Ensure all staff wear before service</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Face Masks <span class="item-quantity">5-10 pieces</span></div>
+                        <div class="item-note">Disposable surgical masks for all serving staff</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SERVING CONTAINERS & EQUIPMENT -->
+        <div class="section">
+            <div class="section-header">🍱 SERVING CONTAINERS & EQUIPMENT</div>
+            <div class="section-content">
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Chafing Dishes / Food Warmers <span class="item-quantity">3-4 sets</span></div>
+                        <div class="item-note">With fuel canisters (Sterno) - 2 per dish</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Chafing Dish Fuel Canisters <span class="item-quantity">6-8 cans</span><span class="priority-badge">CRITICAL</span></div>
+                        <div class="item-note">Sterno or gel fuel - 2 per chafing dish minimum</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Fryer(s) <span class="priority-badge">EQUIPMENT</span></div>
+                        <div class="item-note">For on-site frying of french fries and veg sticks</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Cooking Oil <span class="item-quantity">Adequate quantity</span><span class="priority-badge">CRITICAL</span></div>
+                        <div class="item-note">Enough for frying all kids items</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Electrical Extension Box / Cord<span class="priority-badge">CRITICAL</span></div>
+                        <div class="item-note">For fryer power supply, verify adequate length and amperage</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Aluminum Parcel Boxes - Small</div>
+                        <div class="item-note">For takeaway/packing if needed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UTENSILS & SERVING TOOLS -->
+        <div class="section">
+            <div class="section-header">🥄 UTENSILS & SERVING TOOLS</div>
+            <div class="section-content">
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Serving Spoons <span class="item-quantity">6-8 large</span></div>
+                        <div class="item-note">Stainless steel, one per dish</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Serving Ladles <span class="item-quantity">3-4 pieces</span></div>
+                        <div class="item-note">For gravy items</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Tongs <span class="item-quantity">3-4 pairs</span></div>
+                        <div class="item-note">For finger foods and fries</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Plates <span class="item-quantity">70-80 pieces</span></div>
+                        <div class="item-note">Disposable or reusable; calculate 25% extra</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Bowls <span class="item-quantity">100 pieces</span></div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Forks <span class="item-quantity">100 pieces</span></div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Spoons <span class="item-quantity">100 pieces</span></div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Napkins / Tissues <span class="item-quantity">100+ pieces</span></div>
+                        <div class="item-note">Paper napkins or wet wipes</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Cups / Glasses <span class="item-quantity">50-60 pieces</span></div>
+                        <div class="item-note">For water/beverages</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- CONDIMENTS & ACCOMPANIMENTS -->
+        <div class="section">
+            <div class="section-header">🧂 CONDIMENTS & ACCOMPANIMENTS</div>
+            <div class="section-content">
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Tomato Ketchup <span class="item-quantity">3-4 bottles</span></div>
+                        <div class="item-note">Especially for kids items</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Hot Sauce / Chili Sauce <span class="item-quantity">2-3 bottles</span></div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Soy Sauce <span class="item-quantity">2 bottles</span></div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Salt & Pepper Shakers <span class="item-quantity">2-3 sets</span></div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Vinegar / Pickles</div>
+                        <div class="item-note">Optional side accompaniments</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SETUP & TRANSPORT -->
+        <div class="section">
+            <div class="section-header">📦 SETUP & TRANSPORT ITEMS</div>
+            <div class="section-content">
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Trash Bags <span class="item-quantity">10-15 large bags</span></div>
+                        <div class="item-note">For cleanup</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Garbage Bins <span class="item-quantity">2-3 bins</span></div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Dustbin with Cover</div>
+                        <div class="item-note">For covered waste disposal</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOCUMENTS & MISCELLANEOUS -->
+        <div class="section">
+            <div class="section-header">📄 DOCUMENTS & MISCELLANEOUS</div>
+            <div class="section-content">
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Business Cards / Promotional Material</div>
+                        <div class="item-note">For marketing</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRE-DEPARTURE VERIFICATION -->
+        <div class="section">
+            <div class="section-header">✅ PRE-DEPARTURE VERIFICATION</div>
+            <div class="section-content">
+                <div class="checklist-item priority-high">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">All staff wearing gloves, masks, and hair nets<span class="priority-badge">CRITICAL</span></div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <div class="item-details">
+                        <div class="item-name">Enough fuel in chafing dishes (2 cans per dish)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="signature-box">
+                <div class="signature-line">
+                    Kitchen Manager / Preparer<br>
+                    Name: _____________________
+                </div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">
+                    Delivery Staff / Driver<br>
+                    Name: _____________________
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="print-button no-print" onclick="window.print()">🖨️ Print Checklist</button>
+</body>
+</html>

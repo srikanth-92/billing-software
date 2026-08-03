@@ -19,6 +19,8 @@ import GuestQRScreen from './src/screens/GuestQRScreen';
 import AllQRScreen from './src/screens/AllQRScreen';
 import CateringOrderScreen from './src/screens/CateringOrderScreen';
 import CateringBillScreen from './src/screens/CateringBillScreen';
+import KidsMenuScreen from './src/screens/KidsMenuScreen';
+import LogSaleScreen from './src/screens/LogSaleScreen';
 
 const Stack = createStackNavigator();
 export const navigationRef = createNavigationContainerRef();
@@ -27,10 +29,25 @@ const linking = {
   prefixes: ['https://buffet-on-wheels-ba58b.web.app', 'buffetonwheels://'],
   config: {
     screens: {
-      GuestMenu: ':cartId/guest',
+      Login: '',
+      Admin: 'admin',
+      Menu: 'menu',
+      Payment: 'payment',
+      Sales: 'sales',
+      GuestQR: 'guest-qr',
+      AllQR: 'all-qr',
+      GuestMenu: {
+        path: ':cartId/guest',
+        parse: {
+          cartId: (cartId) => cartId,
+        },
+      },
+      GuestPayment: 'guest-payment',
       GuestConfirm: 'guest-confirm',
       CateringOrder: 'catering',
-      Login: '',
+      CateringBill: 'catering-bill',
+      KidsMenu: 'kids-menu',
+      LogSale: 'log-sale',
     },
   },
 };
@@ -86,6 +103,8 @@ export default function App() {
         <Stack.Screen name="AllQR" component={AllQRScreen} />
         <Stack.Screen name="CateringOrder" component={CateringOrderScreen} />
         <Stack.Screen name="CateringBill" component={CateringBillScreen} />
+        <Stack.Screen name="KidsMenu" component={KidsMenuScreen} />
+        <Stack.Screen name="LogSale" component={LogSaleScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

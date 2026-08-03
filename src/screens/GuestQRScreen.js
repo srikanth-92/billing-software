@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Pla
 import { THEME } from '../constants/theme';
 import { RESTAURANT_NAME, GUEST_ORDER_BASE, EMPLOYEES } from '../constants';
 import QRCodeDisplay from '../components/QRCodeDisplay';
+import { loadSession } from '../utils/session';
 
 export default function GuestQRScreen({ navigation, route }) {
-  const employee = EMPLOYEES.find((e) => e.username === route.params?.employeeUsername) || EMPLOYEES[1];
+  const session = loadSession();
+  const employee = EMPLOYEES.find((e) => e.username === session?.username) || EMPLOYEES[1];
   // Use redirect page to force opening in Chrome/Safari instead of in-app browsers
   const cartUrl = `${GUEST_ORDER_BASE}/qr-redirect.html?cart=${employee.username}`;
 
